@@ -505,34 +505,26 @@ const TaskSection: React.FC<TaskSectionProps> = ({
               </span>
               !
             </motion.p>
-            {!isClaimInitiated ? (
-              <button
-                onClick={handleClaim}
+            <Transaction
+              contracts={[
+                {
+                  address: contractAddress,
+                  abi: mintABI,
+                  functionName: "mint",
+                  args: [address],
+                },
+              ]}
+              chainId={BASE_SEPOLIA_CHAIN_ID}
+              onSuccess={handleClaimSuccess}
+              onError={handleClaimError}
+            >
+              <TransactionButton
                 className="px-8 py-4 rounded-full font-bold text-xl transition duration-300 bg-purple-600 hover:bg-purple-700 text-white transform hover:scale-105 shadow-lg"
-              >
-                🎉 Claim $ICR Tokens Now! 🎉
-              </button>
-            ) : (
-              <Transaction
-                contracts={[
-                  {
-                    address: contractAddress,
-                    abi: mintABI,
-                    functionName: "mint",
-                    args: [address],
-                  },
-                ]}
-                chainId={BASE_SEPOLIA_CHAIN_ID}
-                onSuccess={handleClaimSuccess}
-                onError={handleClaimError}
-              >
-                <TransactionButton
-                  className="px-8 py-4 rounded-full font-bold text-xl transition duration-300 bg-purple-600 hover:bg-purple-700 text-white transform hover:scale-105 shadow-lg"
-                  text="🎉 Claim $ICR Tokens Now! 🎉"
-                />
-                <TransactionStatusComponent />
-              </Transaction>
-            )}
+                text="🎉 Claim $ICR Tokens Now! 🎉"
+                disabled={isClaimInitiated}
+              />
+              {isClaimInitiated && <TransactionStatusComponent />}
+            </Transaction>
           </div>
         </motion.div>
       )}
