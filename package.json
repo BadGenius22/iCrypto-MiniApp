@@ -5,7 +5,8 @@
   "scripts": {
     "build": "next build",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "dev": "next dev"
   },
   "dependencies": {
     "@coinbase/onchainkit": "^0.32.0",
