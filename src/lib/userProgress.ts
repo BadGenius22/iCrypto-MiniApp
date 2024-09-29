@@ -12,6 +12,7 @@ export interface UserProgress {
       feedback: string;
     };
   };
+  hasClaimedRewards: boolean; // Add this line
 }
 
 export async function saveUserProgress(progress: UserProgress): Promise<void> {

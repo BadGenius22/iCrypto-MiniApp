@@ -19,7 +19,7 @@ import { useOnchainKit } from "@coinbase/onchainkit";
 
 interface TaskSectionProps {
   initialProgress: UserProgress | null;
-  address: `0x${string}`; // Add this line
+  address: `0x${string}`;
 }
 
 const TaskSection: React.FC<TaskSectionProps> = ({
@@ -42,6 +42,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   const questsPerPage = 4;
 
   const [isClaimInitiated, setIsClaimInitiated] = useState(false);
+  const [hasClaimedRewards, setHasClaimedRewards] = useState(false);
 
   useEffect(() => {
     if (address) {
@@ -60,6 +61,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
         setCurrentQuestIndex(
           getNextIncompleteQuestIndex(progress.completedQuests)
         );
+        setHasClaimedRewards(progress.hasClaimedRewards || false);
       }
     }
   };
@@ -108,6 +110,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
       submissions: {
         ...initialProgress?.submissions,
       },
+      hasClaimedRewards: false,
     };
 
     if (quest.requiresFeedback) {
@@ -151,6 +154,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
       points: 0,
       completedQuests: [],
       submissions: {},
+      hasClaimedRewards: false,
     };
     await saveUserProgress(resetProgress);
     setPoints(0);
@@ -162,7 +166,11 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     setFeedback("");
   };
 
-  const handleClaim = async () => {
+  const handleClaim = () => {
+    if (hasClaimedRewards) {
+      alert("You have already claimed your rewards!");
+      return;
+    }
     setIsClaimInitiated(true);
     console.log("Claiming rewards...");
   };
@@ -170,16 +178,16 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   const handleClaimSuccess = async () => {
     if (!address) return;
 
-    const resetProgress: UserProgress = {
+    const updatedProgress: UserProgress = {
       address,
-      level: 1,
-      points: 0,
-      completedQuests: [],
-      submissions: {},
+      level,
+      points,
+      completedQuests,
+      submissions: initialProgress?.submissions || {},
+      hasClaimedRewards: true,
     };
-    await saveUserProgress(resetProgress);
-    setPoints(0);
-    setCompletedQuests([]);
+    await saveUserProgress(updatedProgress);
+    setHasClaimedRewards(true);
 
     // Trigger confetti effect
     confetti({
@@ -209,13 +217,13 @@ const TaskSection: React.FC<TaskSectionProps> = ({
       });
     }, 400);
 
-    setIsClaimInitiated(false); // Reset the claim state
+    setIsClaimInitiated(false);
   };
 
   const handleClaimError = (error: any) => {
     console.error("Error claiming reward:", error);
     setClaimError("Failed to claim reward. Please try again.");
-    setIsClaimInitiated(false); // Reset the claim state
+    setIsClaimInitiated(false);
   };
 
   const filterQuests = (questList: Quest[]) => {
@@ -474,7 +482,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
       </div>
 
       {/* Claim Rewards Section */}
-      {points > 0 && (
+      {points > 0 && !hasClaimedRewards && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -497,28 +505,48 @@ const TaskSection: React.FC<TaskSectionProps> = ({
               </span>
               !
             </motion.p>
-            <Transaction
-              contracts={[
-                {
-                  address: contractAddress,
-                  abi: mintABI,
-                  functionName: "mint",
-                  args: [address],
-                },
-              ]}
-              chainId={BASE_SEPOLIA_CHAIN_ID}
-              onSuccess={handleClaimSuccess}
-              onError={handleClaimError}
-            >
-              <TransactionButton
-                className="px-8 py-4 rounded-full font-bold text-xl transition duration-300 bg-purple-600 hover:bg-purple-700 text-white transform hover:scale-105 shadow-lg"
-                text="🎉 Claim $ICR Tokens Now! 🎉"
+            {!isClaimInitiated ? (
+              <button
                 onClick={handleClaim}
-              />
-              <TransactionStatusComponent />
-            </Transaction>
+                className="px-8 py-4 rounded-full font-bold text-xl transition duration-300 bg-purple-600 hover:bg-purple-700 text-white transform hover:scale-105 shadow-lg"
+              >
+                🎉 Claim $ICR Tokens Now! 🎉
+              </button>
+            ) : (
+              <Transaction
+                contracts={[
+                  {
+                    address: contractAddress,
+                    abi: mintABI,
+                    functionName: "mint",
+                    args: [address],
+                  },
+                ]}
+                chainId={BASE_SEPOLIA_CHAIN_ID}
+                onSuccess={handleClaimSuccess}
+                onError={handleClaimError}
+              >
+                <TransactionButton
+                  className="px-8 py-4 rounded-full font-bold text-xl transition duration-300 bg-purple-600 hover:bg-purple-700 text-white transform hover:scale-105 shadow-lg"
+                  text="🎉 Claim $ICR Tokens Now! 🎉"
+                />
+                <TransactionStatusComponent />
+              </Transaction>
+            )}
           </div>
         </motion.div>
+      )}
+      {hasClaimedRewards && (
+        <div
+          className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg"
+          role="alert"
+        >
+          <p className="font-bold">Rewards Claimed!</p>
+          <p>
+            You have successfully claimed your rewards. Keep completing quests
+            to earn more!
+          </p>
+        </div>
       )}
     </div>
   );
