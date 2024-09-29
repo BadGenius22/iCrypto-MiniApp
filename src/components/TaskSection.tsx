@@ -41,6 +41,8 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const questsPerPage = 4;
 
+  const [isClaimInitiated, setIsClaimInitiated] = useState(false);
+
   useEffect(() => {
     if (address) {
       loadUserProgress();
@@ -161,12 +163,12 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   };
 
   const handleClaim = async () => {
-    // This function will be called when the TransactionButton is clicked
+    setIsClaimInitiated(true);
     console.log("Claiming rewards...");
   };
 
   const handleClaimSuccess = async () => {
-    if (!address) return; // Add this check
+    if (!address) return;
 
     const resetProgress: UserProgress = {
       address,
@@ -206,11 +208,14 @@ const TaskSection: React.FC<TaskSectionProps> = ({
         colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
       });
     }, 400);
+
+    setIsClaimInitiated(false); // Reset the claim state
   };
 
   const handleClaimError = (error: any) => {
     console.error("Error claiming reward:", error);
     setClaimError("Failed to claim reward. Please try again.");
+    setIsClaimInitiated(false); // Reset the claim state
   };
 
   const filterQuests = (questList: Quest[]) => {
@@ -348,37 +353,16 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     );
   };
 
-  const TransactionStatusComponent: React.FC = () => {
+  const TransactionStatusComponent = () => {
+    if (!isClaimInitiated) return null;
+
     return (
       <TransactionStatus>
-        <StatusContent />
+        <div className="mt-4 text-center font-semibold">
+          {/* You can customize this based on the actual transaction status */}
+          Claiming your rewards...
+        </div>
       </TransactionStatus>
-    );
-  };
-
-  const StatusContent: React.FC = () => {
-    const [status, setStatus] = useState<string>("idle");
-
-    useEffect(() => {
-      // This is a placeholder for actual status updates
-      // You might need to implement a way to get real-time status updates
-      const timer = setTimeout(() => {
-        setStatus("in-progress");
-        setTimeout(() => {
-          setStatus(Math.random() > 0.5 ? "success" : "error");
-        }, 2000);
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }, []);
-
-    return (
-      <div className="mt-4 text-center font-semibold">
-        {status === "in-progress" && "Claiming your rewards..."}
-        {status === "success" && "Congratulations! Rewards claimed!"}
-        {status === "error" && "Error claiming rewards. Please try again."}
-        {status === "idle" && "Ready to claim rewards"}
-      </div>
     );
   };
 
@@ -529,6 +513,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
               <TransactionButton
                 className="px-8 py-4 rounded-full font-bold text-xl transition duration-300 bg-purple-600 hover:bg-purple-700 text-white transform hover:scale-105 shadow-lg"
                 text="🎉 Claim $ICR Tokens Now! 🎉"
+                onClick={handleClaim}
               />
               <TransactionStatusComponent />
             </Transaction>
