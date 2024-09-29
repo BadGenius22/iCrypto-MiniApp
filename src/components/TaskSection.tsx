@@ -9,6 +9,7 @@ import {
 } from "@coinbase/onchainkit/transaction";
 import { BASE_SEPOLIA_CHAIN_ID } from "../constants";
 import { Progress } from "./Progress";
+import { RenderProp } from "@tanstack/react-query";
 
 interface TaskSectionProps {
   address: string;
@@ -462,15 +463,21 @@ const TaskSection: React.FC<TaskSectionProps> = ({ address }) => {
               />
               <TransactionStatus>
                 <div className="mt-4 text-center font-semibold">
-                  {({ status }) => {
-                    if (status === "in-progress")
-                      return "Claiming your rewards...";
-                    if (status === "success")
-                      return "Congratulations! Rewards claimed!";
-                    if (status === "error")
-                      return "Error claiming rewards. Please try again.";
-                    return null;
-                  }}
+                  <RenderProp>
+                    {({
+                      status,
+                    }: {
+                      status: "in-progress" | "completed" | "pending";
+                    }) => {
+                      if (status === "in-progress")
+                        return "Claiming your rewards...";
+                      if (status === "completed")
+                        return "Congratulations! Rewards claimed!";
+                      if (status === "pending")
+                        return "Error claiming rewards. Please try again.";
+                      return null;
+                    }}
+                  </RenderProp>
                 </div>
               </TransactionStatus>
             </Transaction>
