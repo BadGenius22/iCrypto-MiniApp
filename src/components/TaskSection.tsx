@@ -7,7 +7,7 @@ import {
   TransactionButton,
   TransactionStatus,
 } from "@coinbase/onchainkit/transaction";
-import { BASE_SEPOLIA_CHAIN_ID } from "../constants";
+import { BASE_SEPOLIA_CHAIN_ID, contractAddress, mintABI } from "../constants";
 import { Progress } from "./Progress";
 import {
   saveUserProgress,
@@ -21,8 +21,6 @@ interface TaskSectionProps {
   initialProgress: UserProgress | null;
   address: `0x${string}`; // Add this line
 }
-
-const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 const TaskSection: React.FC<TaskSectionProps> = ({
   initialProgress,
@@ -510,18 +508,10 @@ const TaskSection: React.FC<TaskSectionProps> = ({
             <Transaction
               contracts={[
                 {
-                  address: CONTRACT_ADDRESS,
-                  abi: [
-                    {
-                      name: "claimReward",
-                      type: "function",
-                      stateMutability: "nonpayable",
-                      inputs: [],
-                      outputs: [],
-                    },
-                  ],
-                  functionName: "claimReward",
-                  args: [],
+                  address: contractAddress,
+                  abi: mintABI,
+                  functionName: "mint",
+                  args: [address],
                 },
               ]}
               chainId={BASE_SEPOLIA_CHAIN_ID}
