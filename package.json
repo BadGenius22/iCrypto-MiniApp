@@ -10,11 +10,12 @@
     "ci:lint": "biome ci --formatter-enabled=false --organize-imports-enabled=false",
     "dev": "NODE_OPTIONS='--inspect' next dev",
     "format": "biome format --write .",
-    "lint": "biome lint --write .",
+    "lint": "next lint",
     "lint:unsafe": "biome lint --write --unsafe .",
     "start": "next start",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@coinbase/onchainkit": "^0.32.0",
