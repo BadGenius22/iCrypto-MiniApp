@@ -18,15 +18,15 @@ jobs:
           node-version: "18.x"
 
       - name: Install dependencies
-        run: npm ci
+        run: yarn install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: yarn build
 
       - name: Lint
-        run: npm run lint
+        run: yarn lint
         continue-on-error: true # This will allow the workflow to continue even if linting fails
 
       - name: Type check
-        run: npm run type-check
+        run: yarn type-check
         continue-on-error: true # This will allow the workflow to continue even if type checking fails
