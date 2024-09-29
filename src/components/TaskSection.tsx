@@ -87,7 +87,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   };
 
   const completeQuest = async (quest: Quest) => {
-    if (!address) return; // Add this check
+    if (!address) return;
 
     const newPoints = points + quest.rewardPoints;
     const newCompletedQuests = [...completedQuests, quest.id];
@@ -98,18 +98,22 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     setLevel(newLevel);
 
     // Save progress to Firebase
-    await saveUserProgress({
+    const updatedProgress: UserProgress = {
       address,
       level: newLevel,
       points: newPoints,
       completedQuests: newCompletedQuests,
       submissions: {
         ...initialProgress?.submissions,
-        [quest.id]: { summary: takeaways, feedback },
       },
-    });
+    };
 
-    await addCompletedQuest(address, quest.id, takeaways, feedback);
+    if (quest.requiresFeedback) {
+      updatedProgress.submissions[quest.id] = { summary: takeaways, feedback };
+      await addCompletedQuest(address, quest.id, takeaways, feedback);
+    }
+
+    await saveUserProgress(updatedProgress);
 
     setProgress((newPoints % 50) * 2);
     if (newLevel > level) {
@@ -231,9 +235,10 @@ const TaskSection: React.FC<TaskSectionProps> = ({
 
   const renderQuestCard = (quest: Quest) => {
     const isCompleted = isQuestCompleted(quest.id);
-    const isFormValid =
-      takeaways.trim().split(/\s+/).length >= 5 &&
-      feedback.trim().split(/\s+/).length >= 5;
+    const isFormValid = quest.requiresFeedback
+      ? takeaways.trim().split(/\s+/).length >= 5 &&
+        feedback.trim().split(/\s+/).length >= 5
+      : true;
 
     return (
       <motion.div
@@ -247,7 +252,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
       >
         <h3 className="font-bold text-xl mb-4 text-gray-800">{quest.title}</h3>
         <p className="mb-4 text-gray-600">{quest.description}</p>
-        {quest.isPrerequisite && quest.socialChannel ? (
+        {quest.type === "social" && quest.socialChannel ? (
           <button
             onClick={() => handleSocialFollow(quest)}
             className={`w-full px-6 py-3 rounded-full font-semibold transition duration-300 ${
@@ -261,7 +266,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
               ? "Completed!"
               : `Follow on ${quest.socialChannel.name}`}
           </button>
-        ) : (
+        ) : quest.type === "article" ? (
           <>
             <a
               href={quest.articleUrl}
@@ -275,7 +280,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
             >
               {isCompleted ? "Completed!" : "Read Article"}
             </a>
-            {!isCompleted && (
+            {!isCompleted && quest.requiresFeedback && (
               <form
                 onSubmit={(e) => handleSubmit(e, quest)}
                 className="mt-4 space-y-4"
@@ -324,6 +329,9 @@ const TaskSection: React.FC<TaskSectionProps> = ({
               </form>
             )}
           </>
+        ) : (
+          // Handle custom quest types here
+          <div>Custom quest content</div>
         )}
         {isCompleted && (
           <motion.div

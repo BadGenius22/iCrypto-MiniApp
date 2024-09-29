@@ -12,6 +12,8 @@ export interface Quest {
   rewardPoints: number;
   isPrerequisite?: boolean;
   socialChannel?: SocialChannel;
+  type: "social" | "article" | "custom"; // Add this line
+  requiresFeedback: boolean; // Add this line
 }
 
 export const socialChannels: SocialChannel[] = [
@@ -40,6 +42,8 @@ export const quests: Quest[] = [
     rewardPoints: 5,
     isPrerequisite: true,
     socialChannel: socialChannels[0],
+    type: "social",
+    requiresFeedback: false,
   },
   {
     id: "follow-tiktok",
@@ -48,6 +52,8 @@ export const quests: Quest[] = [
     rewardPoints: 5,
     isPrerequisite: true,
     socialChannel: socialChannels[1],
+    type: "social",
+    requiresFeedback: false,
   },
   {
     id: "subscribe-youtube",
@@ -57,6 +63,8 @@ export const quests: Quest[] = [
     rewardPoints: 5,
     isPrerequisite: true,
     socialChannel: socialChannels[2],
+    type: "social",
+    requiresFeedback: false,
   },
   {
     id: "xrp-prediction",
@@ -65,6 +73,8 @@ export const quests: Quest[] = [
       "Baca artikel tentang prediksi harga XRP dan berikan pendapatmu.",
     articleUrl: "https://icrypto.co.id/xrp-prediksi-ledakan-harga-2024/",
     rewardPoints: 10,
+    type: "article",
+    requiresFeedback: true,
   },
   {
     id: "coinbase-vs-sec",
@@ -72,6 +82,8 @@ export const quests: Quest[] = [
     description: "Baca artikel tentang Coinbase vs SEC dan berikan pendapatmu.",
     articleUrl: "https://icrypto.co.id/coinbase-vs-sec-regulasi-kripto/",
     rewardPoints: 50,
+    type: "article",
+    requiresFeedback: true,
   },
   // Add more quests here in the future
 ];
