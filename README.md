@@ -68,10 +68,6 @@ Dewangga Praxindo
 
 6. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
-
 ## Copyright
 
 © 2024 iCrypto Media. All rights reserved.
