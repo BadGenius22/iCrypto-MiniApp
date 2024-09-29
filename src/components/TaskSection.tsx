@@ -43,6 +43,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
 
   const [isClaimInitiated, setIsClaimInitiated] = useState(false);
   const [hasClaimedRewards, setHasClaimedRewards] = useState(false);
+  const [transactionHash, setTransactionHash] = useState<string | null>(null);
 
   useEffect(() => {
     if (address) {
@@ -175,49 +176,61 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     console.log("Claiming rewards...");
   };
 
-  const handleClaimSuccess = async () => {
+  const handleClaimSuccess = async (data: any) => {
+    console.log("Claim success data:", data);
     if (!address) return;
 
-    const updatedProgress: UserProgress = {
-      address,
-      level,
-      points,
-      completedQuests,
-      submissions: initialProgress?.submissions || {},
-      hasClaimedRewards: true,
-    };
-    await saveUserProgress(updatedProgress);
-    setHasClaimedRewards(true);
+    // For ERC721, the transaction hash is usually in the `hash` property
+    const hash = data.hash;
+    console.log("Transaction hash:", hash);
 
-    // Trigger confetti effect
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
-    });
+    if (hash) {
+      setTransactionHash(hash);
 
-    setTimeout(() => {
+      const updatedProgress: UserProgress = {
+        address,
+        level,
+        points,
+        completedQuests,
+        submissions: initialProgress?.submissions || {},
+        hasClaimedRewards: true,
+      };
+      await saveUserProgress(updatedProgress);
+      setHasClaimedRewards(true);
+
+      // Trigger confetti effect
       confetti({
-        particleCount: 50,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
         colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
       });
-    }, 250);
 
-    setTimeout(() => {
-      confetti({
-        particleCount: 50,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-        colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
-      });
-    }, 400);
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
+        });
+      }, 250);
 
-    setIsClaimInitiated(false);
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
+        });
+      }, 400);
+
+      setIsClaimInitiated(false);
+    } else {
+      console.error("No transaction hash found in the response");
+      setClaimError("Failed to get transaction hash. Please try again.");
+    }
   };
 
   const handleClaimError = (error: any) => {
@@ -374,6 +387,10 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     );
   };
 
+  useEffect(() => {
+    console.log("Current transaction hash:", transactionHash); // Add this log
+  }, [transactionHash]);
+
   return (
     <div id="quest-section" className="space-y-8">
       <motion.div
@@ -529,16 +546,35 @@ const TaskSection: React.FC<TaskSectionProps> = ({
         </motion.div>
       )}
       {hasClaimedRewards && (
-        <div
-          className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="bg-green-100 border-l-4 border-green-500 text-green-700 p-6 rounded-lg shadow-lg"
           role="alert"
         >
-          <p className="font-bold">Rewards Claimed!</p>
-          <p>
-            You have successfully claimed your rewards. Keep completing quests
-            to earn more!
+          <h3 className="font-bold text-xl mb-2">🎉 Rewards Claimed!</h3>
+          <p className="mb-4">
+            Congratulations! You have successfully claimed your rewards.
           </p>
-        </div>
+          {transactionHash ? (
+            <p className="mt-2">
+              <a
+                href={`https://sepolia.basescan.org/tx/${transactionHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300"
+              >
+                View Transaction on Base Sepolia Explorer
+              </a>
+            </p>
+          ) : (
+            <p className="mt-2 text-yellow-600">
+              Transaction details are being processed. Please check your wallet
+              for confirmation.
+            </p>
+          )}
+        </motion.div>
       )}
     </div>
   );
