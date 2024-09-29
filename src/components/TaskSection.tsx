@@ -9,14 +9,25 @@ import {
 } from "@coinbase/onchainkit/transaction";
 import { BASE_SEPOLIA_CHAIN_ID } from "../constants";
 import { Progress } from "./Progress";
+import {
+  saveUserProgress,
+  getUserProgress,
+  addCompletedQuest,
+  UserProgress,
+} from "../lib/userProgress";
+import { useOnchainKit } from "@coinbase/onchainkit";
 
 interface TaskSectionProps {
-  address: string;
+  initialProgress: UserProgress | null;
+  address: `0x${string}`; // Add this line
 }
 
 const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-const TaskSection: React.FC<TaskSectionProps> = ({ address }) => {
+const TaskSection: React.FC<TaskSectionProps> = ({
+  initialProgress,
+  address,
+}) => {
   const [takeaways, setTakeaways] = useState("");
   const [feedback, setFeedback] = useState("");
   const [points, setPoints] = useState(0);
@@ -33,24 +44,23 @@ const TaskSection: React.FC<TaskSectionProps> = ({ address }) => {
   const questsPerPage = 4;
 
   useEffect(() => {
-    loadUserData();
+    if (address) {
+      loadUserProgress();
+    }
   }, [address]);
 
-  const loadUserData = () => {
-    const savedPoints = localStorage.getItem(`${address}_points`);
-    const savedCompletedQuests = localStorage.getItem(
-      `${address}_completed_quests`
-    );
-    if (savedPoints) {
-      const parsedPoints = parseInt(savedPoints);
-      setPoints(parsedPoints);
-      setLevel(Math.floor(parsedPoints / 50) + 1);
-      setProgress((parsedPoints % 50) * 2);
-    }
-    if (savedCompletedQuests) {
-      const parsedCompletedQuests = JSON.parse(savedCompletedQuests);
-      setCompletedQuests(parsedCompletedQuests);
-      setCurrentQuestIndex(getNextIncompleteQuestIndex(parsedCompletedQuests));
+  const loadUserProgress = async () => {
+    if (address) {
+      const progress = await getUserProgress(address);
+      if (progress) {
+        setPoints(progress.points);
+        setLevel(Math.floor(progress.points / 50) + 1);
+        setProgress((progress.points % 50) * 2);
+        setCompletedQuests(progress.completedQuests);
+        setCurrentQuestIndex(
+          getNextIncompleteQuestIndex(progress.completedQuests)
+        );
+      }
     }
   };
 
@@ -78,21 +88,33 @@ const TaskSection: React.FC<TaskSectionProps> = ({ address }) => {
     }
   };
 
-  const completeQuest = (quest: Quest) => {
+  const completeQuest = async (quest: Quest) => {
+    if (!address) return; // Add this check
+
     const newPoints = points + quest.rewardPoints;
     const newCompletedQuests = [...completedQuests, quest.id];
+    const newLevel = Math.floor(newPoints / 50) + 1;
 
     setPoints(newPoints);
     setCompletedQuests(newCompletedQuests);
-    localStorage.setItem(`${address}_points`, newPoints.toString());
-    localStorage.setItem(
-      `${address}_completed_quests`,
-      JSON.stringify(newCompletedQuests)
-    );
+    setLevel(newLevel);
+
+    // Save progress to Firebase
+    await saveUserProgress({
+      address,
+      level: newLevel,
+      points: newPoints,
+      completedQuests: newCompletedQuests,
+      submissions: {
+        ...initialProgress?.submissions,
+        [quest.id]: { summary: takeaways, feedback },
+      },
+    });
+
+    await addCompletedQuest(address, quest.id, takeaways, feedback);
 
     setProgress((newPoints % 50) * 2);
-    if (Math.floor(newPoints / 50) > level - 1) {
-      setLevel((prev) => prev + 1);
+    if (newLevel > level) {
       confetti({
         particleCount: 100,
         spread: 70,
@@ -116,9 +138,17 @@ const TaskSection: React.FC<TaskSectionProps> = ({ address }) => {
   const isQuestCompleted = (questId: string) =>
     completedQuests.includes(questId);
 
-  const resetSubmission = () => {
-    localStorage.removeItem(`${address}_points`);
-    localStorage.removeItem(`${address}_completed_quests`);
+  const resetSubmission = async () => {
+    if (!address) return; // Add this check
+
+    const resetProgress: UserProgress = {
+      address,
+      level: 1,
+      points: 0,
+      completedQuests: [],
+      submissions: {},
+    };
+    await saveUserProgress(resetProgress);
     setPoints(0);
     setLevel(1);
     setProgress(0);
@@ -133,13 +163,21 @@ const TaskSection: React.FC<TaskSectionProps> = ({ address }) => {
     console.log("Claiming rewards...");
   };
 
-  const handleClaimSuccess = () => {
+  const handleClaimSuccess = async () => {
+    if (!address) return; // Add this check
+
+    const resetProgress: UserProgress = {
+      address,
+      level: 1,
+      points: 0,
+      completedQuests: [],
+      submissions: {},
+    };
+    await saveUserProgress(resetProgress);
     setPoints(0);
     setCompletedQuests([]);
-    localStorage.setItem(`${address}_points`, "0");
-    localStorage.setItem(`${address}_completed_quests`, JSON.stringify([]));
 
-    // Trigger a more elaborate confetti effect
+    // Trigger confetti effect
     confetti({
       particleCount: 100,
       spread: 70,

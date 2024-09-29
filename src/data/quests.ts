@@ -50,7 +50,7 @@ export const quests: Quest[] = [
     socialChannel: socialChannels[1],
   },
   {
-    id: "follow-youtube",
+    id: "subscribe-youtube",
     title: "Subscribe to iCrypto Media on YouTube",
     description:
       "Subscribe to our YouTube channel for in-depth crypto analysis.",
