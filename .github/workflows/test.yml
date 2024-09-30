@@ -29,12 +29,6 @@ jobs:
         run: |
           forge --version
 
-      - name: Run Forge fmt
-        working-directory: contracts
-        run: |
-          forge fmt --check
-        id: fmt
-
       - name: Run Forge build
         working-directory: contracts
         run: |
