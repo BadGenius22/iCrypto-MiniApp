@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@coinbase/onchainkit": "^0.32.0",
+    "@openzeppelin/contracts": "^5.0.2",
+    "@openzeppelin/contracts-upgradeable": "^5.0.2",
     "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-progress": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
