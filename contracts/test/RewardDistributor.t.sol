@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract MockERC20 is ERC20 {
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        _mint(msg.sender, 100_000_000 * 10**18);
+        _mint(msg.sender, 1000);
     }
 }
 
@@ -117,101 +117,120 @@ contract RewardDistributorTest is Test {
         assertEq(distributor.hasClaimed(address(token1), user1), true);
     }
 
-    // function testWithdrawUnusedRewards() public {
-    //     // First, deposit some rewards
-    //     uint256 depositAmount = 1000;
-    //     token1.approve(address(distributor), depositAmount);
+    function testWithdrawUnusedRewards() public {
+        // First, deposit some rewards
+        uint256 depositAmount = 1000;
+        token1.approve(address(distributor), depositAmount);
 
-    //     address[] memory tokens = new address[](1);
-    //     tokens[0] = address(token1);
-    //     uint256[] memory amounts = new uint256[](1);
-    //     amounts[0] = depositAmount;
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(token1);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = depositAmount;
 
-    //     distributor.depositRewards(tokens, amounts);
+        distributor.depositRewards(tokens, amounts);
 
-    //     // Try to withdraw immediately (should fail)
-    //     vm.expectRevert(RewardDistributor.WITHDRAWAL_TOO_EARLY.selector);
-    //     distributor.withdrawUnusedRewards(tokens);
+        // Try to withdraw immediately (should fail)
+        vm.expectRevert(RewardDistributor.WITHDRAWAL_TOO_EARLY.selector);
+        distributor.withdrawUnusedRewards(tokens);
 
-    //     // Fast forward 31 days
-    //     vm.warp(block.timestamp + 31 days);
+        // Fast forward 31 days
+        vm.warp(block.timestamp + 31 days);
 
-    //     // Now withdraw should succeed
-    //     distributor.withdrawUnusedRewards(tokens);
+        // Now withdraw should succeed
+        distributor.withdrawUnusedRewards(tokens);
 
-    //     assertEq(token1.balanceOf(address(this)), 1000000 * 10**18 - 100); // Initial balance minus fee
-    // }
+        assertEq(token1.balanceOf(address(this)), 998); // Initial balance minus 0.2% fee
+    }
 
-    // function testCannotClaimTwice() public {
-    //     // First, deposit some rewards
-    //     uint256 depositAmount = 1000;
-    //     token1.approve(address(distributor), depositAmount);
+    function testCannotClaimTwice() public {
+        // Deposit rewards
+        uint256 depositAmount = 1000;
+        token1.approve(address(distributor), depositAmount);
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(token1);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = depositAmount;
+        distributor.depositRewards(tokens, amounts);
 
-    //     address[] memory tokens = new address[](1);
-    //     tokens[0] = address(token1);
-    //     uint256[] memory amounts = new uint256[](1);
-    //     amounts[0] = depositAmount;
+        // Generate Merkle tree
+        bytes32[] memory leaves = new bytes32[](1);
+        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));      
 
-    //     distributor.depositRewards(tokens, amounts);
+        bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));   
 
-    //     // Set up merkle root
-    //     bytes32 merkleRoot = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));
-    //     controller.updateMerkleRoot(merkleRoot);
+        // Update Merkle root
+        controller.updateMerkleRoot(root);
 
-    //     // Claim rewards
-    //     RewardDistributor.ClaimData memory claimData;
-    //     claimData.tokens = new address[](1);
-    //     claimData.tokens[0] = address(token1);
-    //     claimData.points = new uint256[](1);
-    //     claimData.points[0] = 500;
-    //     claimData.merkleProofs = new bytes32[][](1);
-    //     claimData.merkleProofs[0] = new bytes32[](1);
-    //     claimData.merkleProofs[0][0] = bytes32(0);
+        // Generate Merkle proof for user1
+        bytes32[] memory proofUser1 = new bytes32[](1);
+        proofUser1[0] = leaves[0];
 
-    //     vm.prank(user1);
-    //     distributor.claimRewards(claimData);
+        // Claim rewards
+        vm.prank(user1);
+        address[] memory claimTokens = new address[](1);
+        claimTokens[0] = address(token1);
+        uint256[] memory claimPoints = new uint256[](1);
+        claimPoints[0] = 500;
+        bytes32[][] memory proofs = new bytes32[][](1);
+        proofs[0] = proofUser1;
+        distributor.claimRewards(RewardDistributor.ClaimData({
+            tokens: claimTokens,
+            points: claimPoints,
+            merkleProofs: proofs
+        }));
+        // Try to claim again
+        vm.expectRevert(RewardDistributor.HAS_CLAIMED.selector);
+        vm.prank(user1);
+         distributor.claimRewards(RewardDistributor.ClaimData({
+            tokens: claimTokens,
+            points: claimPoints,
+            merkleProofs: proofs
+        }));
+    }
 
-    //     // Try to claim again
-    //     vm.expectRevert(RewardDistributor.HAS_CLAIMED.selector);
-    //     vm.prank(user1);
-    //     distributor.claimRewards(claimData);
-    // }
+    function testCannotWithdrawAfterClaim() public {
+         // Deposit rewards
+        uint256 depositAmount = 1000;
+        token1.approve(address(distributor), depositAmount);
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(token1);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = depositAmount;
+        distributor.depositRewards(tokens, amounts);
 
-    // function testCannotWithdrawAfterClaim() public {
-    //     // First, deposit some rewards
-    //     uint256 depositAmount = 1000;
-    //     token1.approve(address(distributor), depositAmount);
+        // Generate Merkle tree
+        bytes32[] memory leaves = new bytes32[](1);
+        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));      
 
-    //     address[] memory tokens = new address[](1);
-    //     tokens[0] = address(token1);
-    //     uint256[] memory amounts = new uint256[](1);
-    //     amounts[0] = depositAmount;
+        bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));   
 
-    //     distributor.depositRewards(tokens, amounts);
+        // Update Merkle root
+        controller.updateMerkleRoot(root);
 
-    //     // Set up merkle root
-    //     bytes32 merkleRoot = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));
-    //     controller.updateMerkleRoot(merkleRoot);
+        // Generate Merkle proof for user1
+        bytes32[] memory proofUser1 = new bytes32[](1);
+        proofUser1[0] = leaves[0];
 
-    //     // Claim rewards
-    //     RewardDistributor.ClaimData memory claimData;
-    //     claimData.tokens = new address[](1);
-    //     claimData.tokens[0] = address(token1);
-    //     claimData.points = new uint256[](1);
-    //     claimData.points[0] = 500;
-    //     claimData.merkleProofs = new bytes32[][](1);
-    //     claimData.merkleProofs[0] = new bytes32[](1);
-    //     claimData.merkleProofs[0][0] = bytes32(0);
+        // Claim rewards
+        vm.prank(user1);
+        address[] memory claimTokens = new address[](1);
+        claimTokens[0] = address(token1);
+        uint256[] memory claimPoints = new uint256[](1);
+        claimPoints[0] = 500;
+        bytes32[][] memory proofs = new bytes32[][](1);
+        proofs[0] = proofUser1;
+        distributor.claimRewards(RewardDistributor.ClaimData({
+            tokens: claimTokens,
+            points: claimPoints,
+            merkleProofs: proofs
+        }));
 
-    //     vm.prank(user1);
-    //     distributor.claimRewards(claimData);
+        // Fast forward 31 days
+        vm.warp(block.timestamp + 31 days);
 
-    //     // Fast forward 31 days
-    //     vm.warp(block.timestamp + 31 days);
-
-    //     // Try to withdraw (should fail)
-    //     vm.expectRevert(RewardDistributor.REWARDS_ALREADY_CLAIMED.selector);
-    //     distributor.withdrawUnusedRewards(tokens);
-    // }
+        // Try to withdraw (should fail)
+        vm.expectRevert(RewardDistributor.REWARDS_ALREADY_CLAIMED.selector);
+        distributor.withdrawUnusedRewards(tokens);
+    }
 }
 
