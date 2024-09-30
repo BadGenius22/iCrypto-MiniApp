@@ -30,9 +30,17 @@ jobs:
           forge --version
 
       - name: Install dependencies
-        working-directory: contracts
         run: |
           yarn install
+
+      - name: Set up Git user
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+      - name: Install Foundry dependencies
+        working-directory: contracts
+        run: |
           forge install OpenZeppelin/openzeppelin-contracts-upgradeable
 
       - name: Run Forge build
