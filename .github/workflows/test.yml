@@ -29,6 +29,12 @@ jobs:
         run: |
           forge --version
 
+      - name: Install dependencies
+        working-directory: contracts
+        run: |
+          yarn install
+          forge install OpenZeppelin/openzeppelin-contracts-upgradeable
+
       - name: Run Forge build
         working-directory: contracts
         run: |
