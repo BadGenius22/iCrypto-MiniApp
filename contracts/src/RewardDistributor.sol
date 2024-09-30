@@ -4,17 +4,17 @@ pragma solidity ^0.8.20;
 /**
  * @title RewardDistributor
  * @author Dewangga Praxindo
- * @notice This contract is used to distribute rewards to users based on their achievements.   
+ * @notice This contract is used to distribute rewards to users based on their achievements.
  * @dev This contract is used to distribute rewards to users based on their achievements.
  */
 
-import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import { SafeERC20 } from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import { ReentrancyGuardUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
-import { MerkleProof } from '@openzeppelin/contracts/utils/cryptography/MerkleProof.sol';
-import { IRewardDistController } from '../interfaces/IRewardDistController.sol'; 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import { IRewardDistController } from "../interfaces/IRewardDistController.sol";
 
 contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
@@ -36,11 +36,7 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
         uint256 epoch
     );
     event RewardClaimed(address indexed user, address indexed tokens, uint256 rewardAmounts);
-    event UnusedRewardsWithdrawn(
-        address indexed depositor,
-        address indexed token,
-        uint256 amount
-    );
+    event UnusedRewardsWithdrawn(address indexed depositor, address indexed token, uint256 amount);
 
     // =============================================================
     //                          Errors
@@ -102,7 +98,6 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
 
     /* ========== VIEWS ========== */
 
-
     /**
      * @notice Calculate unclaimed rewards for a given token.
      */
@@ -111,7 +106,6 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
         uint256 claimed = totalClaimedRewards[token];
         return deposited > claimed ? deposited - claimed : 0;
     }
-
 
     /**
      * @notice Deposits rewards for specific tokens.
@@ -127,10 +121,7 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
      * @custom:reverts BELOW_MINAMOUNT if any net reward amount is below the minimum required amount for the token.
      * @custom:reverts NET_AMOUNT_BELOW_MIN if the net amount (after fee deduction) is below the minimum amount for the token.
      */
-    function depositRewards(
-        address[] calldata tokens,
-        uint256[] calldata amounts
-    ) external payable nonReentrant {
+    function depositRewards(address[] calldata tokens, uint256[] calldata amounts) external payable nonReentrant {
         if (tokens.length != amounts.length) revert INVALID_INPUT_LENGTH();
 
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -204,7 +195,7 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
 
             uint256 totalRewards = totalDepositedRewards[token];
             uint256 claimableReward = points;
-            
+
             // Ensure the contract has enough tokens to fulfill the claim
             if (claimableReward > totalRewards) revert INSUFFICIENT_REWARDS();
 
@@ -226,12 +217,9 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
      * @custom:reverts REWARDS_ALREADY_CLAIMED if any user has already claimed rewards for the specified token.
      * @custom:reverts WITHDRAWAL_TOO_EARLY if 30 days haven't passed since the last deposit for a token.
      */
-    function withdrawUnusedRewards(
-        address[] calldata tokens
-    ) external nonReentrant {
+    function withdrawUnusedRewards(address[] calldata tokens) external nonReentrant {
         // Iterate through each token
         for (uint256 i = 0; i < tokens.length; i++) {
-    
             uint256 depositorContribution = contributions[tokens[i]][msg.sender];
             if (depositorContribution == 0) {
                 revert ZERO_CONTRIBUTION();

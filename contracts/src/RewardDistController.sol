@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract RewardDistController is OwnableUpgradeable {
     error INVALILD_LENGTH();
@@ -104,10 +104,6 @@ contract RewardDistController is OwnableUpgradeable {
         emit WhitelistRemoved(tokens);
     }
 
-   
-
- 
-
     /**
      * @notice Updates the Merkle root for user reward distribution.
      * @param newMerkleRoot The new Merkle root to be set for the reward distribution.
@@ -115,9 +111,7 @@ contract RewardDistController is OwnableUpgradeable {
      * The new Merkle root replaces the previous value.
      * Emits a `MerkleRootUpdated` event for the update.
      */
-    function updateMerkleRoot(
-        bytes32 newMerkleRoot
-    ) external onlyOwner {
+    function updateMerkleRoot(bytes32 newMerkleRoot) external onlyOwner {
         merkleRoot = newMerkleRoot;
 
         emit MerkleRootUpdated(newMerkleRoot);
@@ -151,8 +145,6 @@ contract RewardDistController is OwnableUpgradeable {
         return minAmount[token];
     }
 
-
-
     /**
      * @notice Gets the current merkle root.
      * @return The current merkle root.
@@ -162,7 +154,7 @@ contract RewardDistController is OwnableUpgradeable {
     }
 
     function setRewardFee(uint256 newFee) external onlyOwner {
-        require(newFee <= FEE_SCALE, 'Invalid fee');
+        require(newFee <= FEE_SCALE, "Invalid fee");
         rewardFee = newFee;
     }
 

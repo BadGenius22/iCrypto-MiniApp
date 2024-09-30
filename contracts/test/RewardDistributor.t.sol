@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "../src/RewardDistributor.sol";
 import "../src/RewardDistController.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { TransparentUpgradeableProxy } from '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol';
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 contract MockERC20 is ERC20 {
@@ -29,19 +29,14 @@ contract RewardDistributorTest is Test {
         user2 = address(0x2);
 
         address controllerImp = address(new RewardDistController());
-   
 
         bytes memory initData = abi.encodeWithSelector(RewardDistController.initialize.selector);
-        address proxyControllerAddress = address(
-            new TransparentUpgradeableProxy(controllerImp, owner, initData)
-        );
+        address proxyControllerAddress = address(new TransparentUpgradeableProxy(controllerImp, owner, initData));
         controller = RewardDistController(proxyControllerAddress);
 
         address distributorImp = address(new RewardDistributor());
         bytes memory initData2 = abi.encodeWithSelector(RewardDistributor.initialize.selector, address(controller));
-        address proxyDistributorAddress = address(
-            new TransparentUpgradeableProxy(distributorImp, owner, initData2)
-        );
+        address proxyDistributorAddress = address(new TransparentUpgradeableProxy(distributorImp, owner, initData2));
         distributor = RewardDistributor(proxyDistributorAddress);
 
         token1 = new MockERC20("ICrypto Token", "ICR");
@@ -87,9 +82,9 @@ contract RewardDistributorTest is Test {
 
         // Generate Merkle tree
         bytes32[] memory leaves = new bytes32[](1);
-        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));      
+        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));
 
-        bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));   
+        bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));
 
         // Update Merkle root
         controller.updateMerkleRoot(root);
@@ -106,11 +101,9 @@ contract RewardDistributorTest is Test {
         claimPoints[0] = 500;
         bytes32[][] memory proofs = new bytes32[][](1);
         proofs[0] = proofUser1;
-        distributor.claimRewards(RewardDistributor.ClaimData({
-            tokens: claimTokens,
-            points: claimPoints,
-            merkleProofs: proofs
-        }));
+        distributor.claimRewards(
+            RewardDistributor.ClaimData({ tokens: claimTokens, points: claimPoints, merkleProofs: proofs })
+        );
 
         // Verify claim
         assertEq(token1.balanceOf(user1), 500);
@@ -154,9 +147,9 @@ contract RewardDistributorTest is Test {
 
         // Generate Merkle tree
         bytes32[] memory leaves = new bytes32[](1);
-        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));      
+        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));
 
-        bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));   
+        bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));
 
         // Update Merkle root
         controller.updateMerkleRoot(root);
@@ -173,23 +166,19 @@ contract RewardDistributorTest is Test {
         claimPoints[0] = 500;
         bytes32[][] memory proofs = new bytes32[][](1);
         proofs[0] = proofUser1;
-        distributor.claimRewards(RewardDistributor.ClaimData({
-            tokens: claimTokens,
-            points: claimPoints,
-            merkleProofs: proofs
-        }));
+        distributor.claimRewards(
+            RewardDistributor.ClaimData({ tokens: claimTokens, points: claimPoints, merkleProofs: proofs })
+        );
         // Try to claim again
         vm.expectRevert(RewardDistributor.HAS_CLAIMED.selector);
         vm.prank(user1);
-         distributor.claimRewards(RewardDistributor.ClaimData({
-            tokens: claimTokens,
-            points: claimPoints,
-            merkleProofs: proofs
-        }));
+        distributor.claimRewards(
+            RewardDistributor.ClaimData({ tokens: claimTokens, points: claimPoints, merkleProofs: proofs })
+        );
     }
 
     function testCannotWithdrawAfterClaim() public {
-         // Deposit rewards
+        // Deposit rewards
         uint256 depositAmount = 1000;
         token1.approve(address(distributor), depositAmount);
         address[] memory tokens = new address[](1);
@@ -200,9 +189,9 @@ contract RewardDistributorTest is Test {
 
         // Generate Merkle tree
         bytes32[] memory leaves = new bytes32[](1);
-        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));      
+        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));
 
-        bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));   
+        bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));
 
         // Update Merkle root
         controller.updateMerkleRoot(root);
@@ -219,11 +208,9 @@ contract RewardDistributorTest is Test {
         claimPoints[0] = 500;
         bytes32[][] memory proofs = new bytes32[][](1);
         proofs[0] = proofUser1;
-        distributor.claimRewards(RewardDistributor.ClaimData({
-            tokens: claimTokens,
-            points: claimPoints,
-            merkleProofs: proofs
-        }));
+        distributor.claimRewards(
+            RewardDistributor.ClaimData({ tokens: claimTokens, points: claimPoints, merkleProofs: proofs })
+        );
 
         // Fast forward 31 days
         vm.warp(block.timestamp + 31 days);
@@ -233,4 +220,3 @@ contract RewardDistributorTest is Test {
         distributor.withdrawUnusedRewards(tokens);
     }
 }
-
