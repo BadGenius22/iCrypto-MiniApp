@@ -29,7 +29,7 @@ contract RewardDistController is OwnableUpgradeable {
 
     uint256 public constant FEE_SCALE = 1e18;
 
-    uint256 public bribeFee;
+    uint256 public rewardFee;
 
     address public feeRecipient;
 
@@ -161,9 +161,9 @@ contract RewardDistController is OwnableUpgradeable {
         return merkleRoot;
     }
 
-    function setBribeFee(uint256 newFee) external onlyOwner {
+    function setRewardFee(uint256 newFee) external onlyOwner {
         require(newFee <= FEE_SCALE, 'Invalid fee');
-        bribeFee = newFee;
+        rewardFee = newFee;
     }
 
     function setFeeRecipient(address recipient) external onlyOwner {

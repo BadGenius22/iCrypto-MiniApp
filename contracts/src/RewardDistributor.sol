@@ -115,7 +115,7 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
 
     /**
      * @notice Deposits rewards for specific tokens.
-     * @dev The function deducts a fee based on the `bribeFee` and `FEE_SCALE` set in the `rewardDistController`.
+     * @dev The function deducts a fee based on the `rewardFee` and `FEE_SCALE` set in the `rewardDistController`.
      * The net reward amount (after fee deduction) must meet the minimum amount requirement for the token.
      * The fee is transferred to the fee recipient specified in `rewardDistController`.
      * @param tokens Array of token addresses for which the rewards are being deposited.
@@ -143,7 +143,7 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
             // Check the minimum amount required
             if (amounts[i] < rewardDistController.getMinAmountForToken(tokens[i])) revert BELOW_MINAMOUNT(amounts[i]);
 
-            uint256 feeAmount = (amounts[i] * rewardDistController.bribeFee()) / rewardDistController.FEE_SCALE();
+            uint256 feeAmount = (amounts[i] * rewardDistController.rewardFee()) / rewardDistController.FEE_SCALE();
             uint256 netRewardAmount = amounts[i] - feeAmount;
 
             if (netRewardAmount < rewardDistController.getMinAmountForToken(tokens[i]))

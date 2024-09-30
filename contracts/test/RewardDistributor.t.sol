@@ -56,7 +56,7 @@ contract RewardDistributorTest is Test {
         minAmounts[1] = 100;
         controller.addToWhitelist(tokens, minAmounts);
         // Set fee and fee recipient
-        controller.setBribeFee(2e15); // 0.2%
+        controller.setRewardFee(2e15); // 0.2%
         controller.setFeeRecipient(address(0xfee));
     }
 
