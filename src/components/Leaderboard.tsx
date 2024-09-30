@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { db } from "../lib/firebase"; // Make sure this path is correct
 
 interface LeaderboardEntry {
   address: string;
   level: number;
-  tokens: number;
+  points: number;
 }
 
 const Leaderboard: React.FC = () => {
@@ -12,15 +14,30 @@ const Leaderboard: React.FC = () => {
   const [highlightedRank, setHighlightedRank] = useState<number | null>(null);
 
   useEffect(() => {
-    // Simulate fetching leaderboard data
-    const mockLeaderboard: LeaderboardEntry[] = [
-      { address: "0x1234...5678", level: 5, tokens: 250 },
-      { address: "0xabcd...efgh", level: 4, tokens: 200 },
-      { address: "0x9876...5432", level: 3, tokens: 150 },
-      { address: "0xijkl...mnop", level: 2, tokens: 100 },
-      { address: "0xqrst...uvwx", level: 1, tokens: 50 },
-    ];
-    setLeaderboard(mockLeaderboard);
+    const fetchLeaderboard = async () => {
+      try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, orderBy("points", "desc"), limit(10));
+        const querySnapshot = await getDocs(q);
+
+        const leaderboardData: LeaderboardEntry[] = querySnapshot.docs.map(
+          (doc) => {
+            const data = doc.data();
+            return {
+              address: doc.id,
+              level: Math.floor(data.points / 50) + 1, // Assuming level calculation
+              points: data.points,
+            };
+          }
+        );
+
+        setLeaderboard(leaderboardData);
+      } catch (error) {
+        console.error("Error fetching leaderboard data:", error);
+      }
+    };
+
+    fetchLeaderboard();
   }, []);
 
   const getEmojiForRank = (rank: number) => {
@@ -73,7 +90,9 @@ const Leaderboard: React.FC = () => {
                     <span className="mr-2">{getEmojiForRank(index + 1)}</span>
                     {index + 1}
                   </td>
-                  <td className="py-2 px-3">{entry.address}</td>
+                  <td className="py-2 px-3">
+                    {entry.address.slice(0, 6)}...{entry.address.slice(-4)}
+                  </td>
                   <td className="py-2 px-3 text-center">
                     <motion.span
                       initial={{ scale: 1 }}
@@ -89,7 +108,7 @@ const Leaderboard: React.FC = () => {
                       animate={{ scale: [1, 1.2, 1] }}
                       transition={{ duration: 0.3 }}
                     >
-                      {entry.tokens}
+                      {entry.points}
                     </motion.span>
                   </td>
                 </motion.tr>
