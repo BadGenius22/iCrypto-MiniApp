@@ -41,3 +41,42 @@ next-env.d.ts
 # Hardhat files
 cache
 artifacts
+
+# TypeChain files
+typechain
+typechain-types
+
+# solidity-coverage files
+coverage
+coverage.json
+
+# Ignore the build directory
+dist
+
+# Node dependency directories
+node_modules
+
+# Ignore Hardhat's default deploy directory
+deployments
+
+# Foundry files
+out
+forge-cache
+
+# Ignore ABI and bytecode files if you generate them separately
+/abi
+/bytecode
+
+# Ignore gas report
+gas-report.txt
+
+# Ignore any local development files
+*.local
+
+# IDE files
+.vscode
+.idea
+
+# Logs
+logs
+*.log
