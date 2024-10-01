@@ -2,16 +2,6 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { quests, Quest } from "../data/quests";
-import {
-  Transaction,
-  TransactionButton,
-  TransactionStatus,
-} from "@coinbase/onchainkit/transaction";
-import {
-  BASE_SEPOLIA_CHAIN_ID,
-  claimRewardsABI,
-  contractAddress,
-} from "../constants";
 import { Progress } from "./Progress";
 import {
   saveUserProgress,
@@ -20,8 +10,6 @@ import {
   UserProgress,
   TokenReward,
 } from "../lib/userProgress";
-import { useOnchainKit } from "@coinbase/onchainkit";
-import { getTokenAddress } from "../config/tokenConfig";
 import TransactionWrapper from "./TransactionWrapper";
 
 interface TaskSectionProps {

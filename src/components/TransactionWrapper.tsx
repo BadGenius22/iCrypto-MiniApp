@@ -22,6 +22,12 @@ import confetti from "canvas-confetti";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 
+interface MerkleProofData {
+  tokens: string[];
+  points: number[];
+  proofs: string[][];
+}
+
 interface TransactionWrapperProps {
   address: Address;
   tokenRewards: TokenReward[];
@@ -33,10 +39,15 @@ interface TransactionWrapperProps {
   onClaimError: (error: any) => void;
 }
 
-const fetchMerkleProof = async (address: string) => {
+const fetchMerkleProof = async (address: string): Promise<MerkleProofData> => {
   const proofDoc = await getDoc(doc(db, "merkleProofs", address));
   if (proofDoc.exists()) {
-    return proofDoc.data().proofs;
+    const data = proofDoc.data();
+    return {
+      tokens: data.tokens,
+      points: data.points,
+      proofs: [data.proofs], // Wrap in array to match contract structure
+    };
   }
   throw new Error("Merkle proof not found for user");
 };
@@ -51,14 +62,15 @@ export default function TransactionWrapper({
   onClaimSuccess,
   onClaimError,
 }: TransactionWrapperProps) {
-  const [merkleProofs, setMerkleProofs] = useState<string[][]>([]);
+  const [merkleProofData, setMerkleProofData] =
+    useState<MerkleProofData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadMerkleProofs = async () => {
       try {
-        const proofs = await fetchMerkleProof(address);
-        setMerkleProofs(proofs);
+        const proofData = await fetchMerkleProof(address);
+        setMerkleProofData(proofData);
       } catch (error) {
         console.error("Error fetching Merkle proofs:", error);
       } finally {
@@ -69,20 +81,24 @@ export default function TransactionWrapper({
     loadMerkleProofs();
   }, [address]);
 
-  const claimData = {
-    tokens: tokenRewards.map((reward) => getTokenAddress(reward.tokenId)),
-    points: tokenRewards.map((reward) => reward.points),
-    merkleProofs: merkleProofs,
-  };
+  const claimData = merkleProofData
+    ? {
+        tokens: merkleProofData.tokens,
+        points: merkleProofData.points,
+        merkleProofs: merkleProofData.proofs,
+      }
+    : null;
 
-  const contracts = [
-    {
-      address: contractAddress,
-      abi: claimRewardsABI,
-      functionName: "claimRewards",
-      args: [claimData],
-    },
-  ] as unknown as ContractFunctionParameters[];
+  const contracts = claimData
+    ? ([
+        {
+          address: contractAddress,
+          abi: claimRewardsABI,
+          functionName: "claimRewards",
+          args: [claimData],
+        },
+      ] as unknown as ContractFunctionParameters[])
+    : [];
 
   const handleSuccess = async (response: TransactionResponse) => {
     console.log("Transaction successful", response);

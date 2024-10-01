@@ -2,20 +2,27 @@ import { MerkleTree } from "merkletreejs";
 import keccak256 from "keccak256";
 import { ethers } from "ethers";
 import { Firestore } from "firebase-admin/firestore";
-import { TokenReward } from "../lib/userProgress";
+import { getTokenAddress } from "../config/tokenConfig";
 import fs from "fs";
 import path from "path";
 
 interface UserReward {
   address: string;
-  tokenId: number;
-  totalPoints: number;
+  tokenRewards: {
+    [tokenAddress: string]: number; // Sum of points for each token address
+  };
 }
 
 interface MerkleTreeData {
   root: string;
   leaves: string[];
-  userProofs: { [address: string]: string[] };
+  userProofs: {
+    [address: string]: {
+      tokens: string[];
+      points: number[];
+      proofs: string[][];
+    };
+  };
 }
 
 async function generateMerkleTree(db: Firestore) {
@@ -41,23 +48,26 @@ async function generateMerkleTree(db: Firestore) {
         return null;
       }
 
-      const totalPoints = userData.tokenRewards.reduce(
-        (sum, reward) => sum + reward.points,
-        0
-      );
+      const tokenRewards: { [tokenAddress: string]: number } = {};
+      userData.tokenRewards.forEach((reward) => {
+        const tokenAddress = getTokenAddress(reward.tokenId);
+        tokenRewards[tokenAddress] =
+          (tokenRewards[tokenAddress] || 0) + reward.points;
+      });
+
       return {
         address: doc.id,
-        tokenId: 1, // Assuming all rewards are for the same token ID
-        totalPoints: totalPoints,
+        tokenRewards,
       };
     })
     .filter((reward): reward is UserReward => reward !== null);
 
   const leaves: Buffer[] = userRewards.map((reward) => {
-    console.log(`Processing user reward:`, JSON.stringify(reward, null, 2));
+    const tokens = Object.keys(reward.tokenRewards);
+    const points = tokens.map((token) => reward.tokenRewards[token]);
     const leaf = ethers.solidityPackedKeccak256(
-      ["address", "uint256", "uint256"],
-      [reward.address, reward.tokenId, reward.totalPoints]
+      ["address", "address[]", "uint256[]"],
+      [reward.address, tokens, points]
     );
     console.log(`Generated leaf: ${leaf}`);
     return Buffer.from(leaf.slice(2), "hex");
@@ -83,20 +93,26 @@ async function generateMerkleTree(db: Firestore) {
   };
 
   for (const userReward of userRewards) {
+    const tokens = Object.keys(userReward.tokenRewards);
+    const points = tokens.map((token) => userReward.tokenRewards[token]);
     const leaf = ethers.solidityPackedKeccak256(
-      ["address", "uint256", "uint256"],
-      [userReward.address, userReward.tokenId, userReward.totalPoints]
+      ["address", "address[]", "uint256[]"],
+      [userReward.address, tokens, points]
     );
     const proof = merkleTree.getHexProof(Buffer.from(leaf.slice(2), "hex"));
 
     console.log(`Storing proof for user ${userReward.address}`);
-    merkleTreeData.userProofs[userReward.address] = proof;
+    merkleTreeData.userProofs[userReward.address] = {
+      tokens,
+      points,
+      proofs: [proof], // Store as a 2D array to match the contract structure
+    };
 
     // Store proof in Firestore
     await db.doc(`merkleProofs/${userReward.address}`).set({
-      proof,
-      tokenId: userReward.tokenId,
-      totalPoints: userReward.totalPoints,
+      tokens,
+      points,
+      proofs: proof, // Store as an array of hex strings
     });
   }
 
