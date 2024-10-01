@@ -1,37 +1,49 @@
 import { doc, setDoc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "./firebase";
 
+export interface TokenReward {
+  tokenId: number;
+  points: number;
+}
+
 export interface UserProgress {
   address: string;
   level: number;
-  points: number;
   completedQuests: string[];
+  tokenRewards: TokenReward[];
   submissions: {
     [questId: string]: {
       summary: string;
       feedback: string;
     };
   };
-  hasClaimedRewards: boolean; // Add this line
+  hasClaimedRewards: boolean;
 }
 
-export async function saveUserProgress(progress: UserProgress): Promise<void> {
-  const userRef = doc(db, "users", progress.address);
-  await setDoc(userRef, progress, { merge: true });
-}
+export const saveUserProgress = async (progress: UserProgress) => {
+  try {
+    const userRef = doc(db, "users", progress.address);
+    await setDoc(userRef, progress);
+  } catch (error) {
+    console.error("Error saving user progress:", error);
+  }
+};
 
-export async function getUserProgress(
+export const getUserProgress = async (
   address: string
-): Promise<UserProgress | null> {
-  const userRef = doc(db, "users", address);
-  const userSnap = await getDoc(userRef);
-
-  if (userSnap.exists()) {
-    return userSnap.data() as UserProgress;
-  } else {
+): Promise<UserProgress | null> => {
+  try {
+    const userRef = doc(db, "users", address);
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+      return userDoc.data() as UserProgress;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting user progress:", error);
     return null;
   }
-}
+};
 
 export async function updateUserPoints(
   address: string,

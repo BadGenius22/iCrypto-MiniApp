@@ -7,15 +7,22 @@ import {
   TransactionButton,
   TransactionStatus,
 } from "@coinbase/onchainkit/transaction";
-import { BASE_SEPOLIA_CHAIN_ID, contractAddress, mintABI } from "../constants";
+import {
+  BASE_SEPOLIA_CHAIN_ID,
+  claimRewardsABI,
+  contractAddress,
+} from "../constants";
 import { Progress } from "./Progress";
 import {
   saveUserProgress,
   getUserProgress,
   addCompletedQuest,
   UserProgress,
+  TokenReward,
 } from "../lib/userProgress";
 import { useOnchainKit } from "@coinbase/onchainkit";
+import { getTokenAddress } from "../config/tokenConfig";
+import TransactionWrapper from "./TransactionWrapper";
 
 interface TaskSectionProps {
   initialProgress: UserProgress | null;
@@ -44,6 +51,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   const [isClaimInitiated, setIsClaimInitiated] = useState(false);
   const [hasClaimedRewards, setHasClaimedRewards] = useState(false);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
+  const [tokenRewards, setTokenRewards] = useState<TokenReward[]>([]);
 
   useEffect(() => {
     if (address) {
@@ -55,14 +63,19 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     if (address) {
       const progress = await getUserProgress(address);
       if (progress) {
-        setPoints(progress.points);
-        setLevel(Math.floor(progress.points / 50) + 1);
-        setProgress((progress.points % 50) * 2);
+        const totalPoints = progress.tokenRewards.reduce(
+          (sum, reward) => sum + reward.points,
+          0
+        );
+        setPoints(totalPoints);
+        setLevel(Math.floor(totalPoints / 50) + 1);
+        setProgress((totalPoints % 50) * 2);
         setCompletedQuests(progress.completedQuests);
         setCurrentQuestIndex(
           getNextIncompleteQuestIndex(progress.completedQuests)
         );
         setHasClaimedRewards(progress.hasClaimedRewards || false);
+        setTokenRewards(progress.tokenRewards);
       }
     }
   };
@@ -94,20 +107,25 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   const completeQuest = async (quest: Quest) => {
     if (!address) return;
 
-    const newPoints = points + quest.rewardPoints;
+    const newTokenRewards = [...tokenRewards, ...quest.tokenRewards];
+    const newTotalPoints = newTokenRewards.reduce(
+      (sum, reward) => sum + reward.points,
+      0
+    );
     const newCompletedQuests = [...completedQuests, quest.id];
-    const newLevel = Math.floor(newPoints / 50) + 1;
+    const newLevel = Math.floor(newTotalPoints / 50) + 1;
 
-    setPoints(newPoints);
+    setPoints(newTotalPoints);
     setCompletedQuests(newCompletedQuests);
     setLevel(newLevel);
+    setTokenRewards(newTokenRewards);
 
     // Save progress to Firebase
     const updatedProgress: UserProgress = {
       address,
       level: newLevel,
-      points: newPoints,
       completedQuests: newCompletedQuests,
+      tokenRewards: newTokenRewards,
       submissions: {
         ...initialProgress?.submissions,
       },
@@ -121,7 +139,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
 
     await saveUserProgress(updatedProgress);
 
-    setProgress((newPoints % 50) * 2);
+    setProgress((newTotalPoints % 50) * 2);
     if (newLevel > level) {
       confetti({
         particleCount: 100,
@@ -147,13 +165,13 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     completedQuests.includes(questId);
 
   const resetSubmission = async () => {
-    if (!address) return; // Add this check
+    if (!address) return;
 
     const resetProgress: UserProgress = {
       address,
       level: 1,
-      points: 0,
       completedQuests: [],
+      tokenRewards: [],
       submissions: {},
       hasClaimedRewards: false,
     };
@@ -165,6 +183,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     setCurrentQuestIndex(0);
     setTakeaways("");
     setFeedback("");
+    setTokenRewards([]);
   };
 
   const handleClaim = () => {
@@ -180,7 +199,6 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     console.log("Claim success data:", data);
     if (!address) return;
 
-    // For ERC721, the transaction hash is usually in the `hash` property
     const hash = data.hash;
     console.log("Transaction hash:", hash);
 
@@ -190,8 +208,8 @@ const TaskSection: React.FC<TaskSectionProps> = ({
       const updatedProgress: UserProgress = {
         address,
         level,
-        points,
         completedQuests,
+        tokenRewards,
         submissions: initialProgress?.submissions || {},
         hasClaimedRewards: true,
       };
@@ -366,30 +384,18 @@ const TaskSection: React.FC<TaskSectionProps> = ({
             className="mt-4 text-center"
           >
             <span className="inline-block bg-yellow-400 text-purple-900 px-4 py-2 rounded-full font-bold">
-              +{quest.rewardPoints} $ICR
+              +
+              {quest.tokenRewards.reduce(
+                (sum, reward) => sum + reward.points,
+                0
+              )}{" "}
+              $ICR
             </span>
           </motion.div>
         )}
       </motion.div>
     );
   };
-
-  const TransactionStatusComponent = () => {
-    if (!isClaimInitiated) return null;
-
-    return (
-      <TransactionStatus>
-        <div className="mt-4 text-center font-semibold">
-          {/* You can customize this based on the actual transaction status */}
-          Claiming your rewards...
-        </div>
-      </TransactionStatus>
-    );
-  };
-
-  useEffect(() => {
-    console.log("Current transaction hash:", transactionHash); // Add this log
-  }, [transactionHash]);
 
   return (
     <div id="quest-section" className="space-y-8">
@@ -499,82 +505,17 @@ const TaskSection: React.FC<TaskSectionProps> = ({
       </div>
 
       {/* Claim Rewards Section */}
-      {points > 0 && !hasClaimedRewards && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-gradient-to-r from-yellow-400 to-orange-500 p-8 rounded-lg shadow-lg text-white relative overflow-hidden"
-        >
-          <div className="relative z-10 text-center">
-            <h3 className="font-bold text-3xl mb-4">
-              🏆 Claim Your Rewards 🏆
-            </h3>
-            <motion.p
-              className="text-2xl mb-6"
-              initial={{ scale: 1 }}
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              You've earned{" "}
-              <span className="font-bold text-purple-900">
-                {points} $ICR tokens
-              </span>
-              !
-            </motion.p>
-            <Transaction
-              contracts={[
-                {
-                  address: contractAddress,
-                  abi: mintABI,
-                  functionName: "mint",
-                  args: [address],
-                },
-              ]}
-              chainId={BASE_SEPOLIA_CHAIN_ID}
-              onSuccess={handleClaimSuccess}
-              onError={handleClaimError}
-            >
-              <TransactionButton
-                className="px-8 py-4 rounded-full font-bold text-xl transition duration-300 bg-purple-600 hover:bg-purple-700 text-white transform hover:scale-105 shadow-lg"
-                text="🎉 Claim $ICR Tokens Now! 🎉"
-                disabled={isClaimInitiated}
-              />
-              {isClaimInitiated && <TransactionStatusComponent />}
-            </Transaction>
-          </div>
-        </motion.div>
-      )}
-      {hasClaimedRewards && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="bg-green-100 border-l-4 border-green-500 text-green-700 p-6 rounded-lg shadow-lg"
-          role="alert"
-        >
-          <h3 className="font-bold text-xl mb-2">🎉 Rewards Claimed!</h3>
-          <p className="mb-4">
-            Congratulations! You have successfully claimed your rewards.
-          </p>
-          {transactionHash ? (
-            <p className="mt-2">
-              <a
-                href={`https://sepolia.basescan.org/tx/${transactionHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300"
-              >
-                View Transaction on Base Sepolia Explorer
-              </a>
-            </p>
-          ) : (
-            <p className="mt-2 text-yellow-600">
-              Transaction details are being processed. Please check your wallet
-              for confirmation.
-            </p>
-          )}
-        </motion.div>
+      {points > 0 && (
+        <TransactionWrapper
+          address={address}
+          tokenRewards={tokenRewards}
+          points={points}
+          hasClaimedRewards={hasClaimedRewards}
+          isClaimInitiated={isClaimInitiated}
+          transactionHash={transactionHash}
+          onClaimSuccess={handleClaimSuccess}
+          onClaimError={handleClaimError}
+        />
       )}
     </div>
   );

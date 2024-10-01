@@ -4,16 +4,21 @@ export interface SocialChannel {
   url: string;
 }
 
+export interface TokenReward {
+  tokenId: number;
+  points: number;
+}
+
 export interface Quest {
   id: string;
   title: string;
   description: string;
   articleUrl?: string;
-  rewardPoints: number;
+  tokenRewards: TokenReward[];
   isPrerequisite?: boolean;
   socialChannel?: SocialChannel;
-  type: "social" | "article" | "custom"; // Add this line
-  requiresFeedback: boolean; // Add this line
+  type: "social" | "article" | "custom";
+  requiresFeedback: boolean;
 }
 
 export const socialChannels: SocialChannel[] = [
@@ -39,7 +44,7 @@ export const quests: Quest[] = [
     id: "follow-instagram",
     title: "Follow iCrypto Media on Instagram",
     description: "Follow our Instagram channel for the latest updates.",
-    rewardPoints: 5,
+    tokenRewards: [{ tokenId: 1, points: 5 }],
     isPrerequisite: true,
     socialChannel: socialChannels[0],
     type: "social",
@@ -49,7 +54,7 @@ export const quests: Quest[] = [
     id: "follow-tiktok",
     title: "Follow iCrypto Media on TikTok",
     description: "Join us on TikTok for short, informative crypto content.",
-    rewardPoints: 5,
+    tokenRewards: [{ tokenId: 1, points: 5 }],
     isPrerequisite: true,
     socialChannel: socialChannels[1],
     type: "social",
@@ -60,7 +65,7 @@ export const quests: Quest[] = [
     title: "Subscribe to iCrypto Media on YouTube",
     description:
       "Subscribe to our YouTube channel for in-depth crypto analysis.",
-    rewardPoints: 5,
+    tokenRewards: [{ tokenId: 1, points: 5 }],
     isPrerequisite: true,
     socialChannel: socialChannels[2],
     type: "social",
@@ -72,7 +77,7 @@ export const quests: Quest[] = [
     description:
       "Baca artikel tentang prediksi harga XRP dan berikan pendapatmu.",
     articleUrl: "https://icrypto.co.id/xrp-prediksi-ledakan-harga-2024/",
-    rewardPoints: 10,
+    tokenRewards: [{ tokenId: 1, points: 10 }],
     type: "article",
     requiresFeedback: true,
   },
@@ -81,7 +86,7 @@ export const quests: Quest[] = [
     title: "Quest 2: Baca Coinbase vs SEC",
     description: "Baca artikel tentang Coinbase vs SEC dan berikan pendapatmu.",
     articleUrl: "https://icrypto.co.id/coinbase-vs-sec-regulasi-kripto/",
-    rewardPoints: 50,
+    tokenRewards: [{ tokenId: 1, points: 25 }],
     type: "article",
     requiresFeedback: true,
   },
