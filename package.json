@@ -7,7 +7,7 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "dev": "next dev",
-    "generate-merkle-tree": "ts-node scripts/generateMerkleTree.ts"
+    "generate-merkle-tree": "tsx scripts/generateMerkleTree.ts"
   },
   "dependencies": {
     "@coinbase/onchainkit": "^0.32.0",
@@ -57,6 +57,8 @@
     "tailwindcss": "^3.4.0",
     "typescript": "^5.3.3",
     "utf-8-validate": "^6.0.3",
-    "vitest": "^2.0.1"
+    "vitest": "^2.0.1",
+    "tsx": "^4.7.1",
+    "dotenv": "^16.0.3"
   }
 }
