@@ -20,7 +20,7 @@ import { TokenReward } from "../lib/userProgress";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { db } from "../config/firebase";
 
 interface TransactionWrapperProps {
   address: Address;

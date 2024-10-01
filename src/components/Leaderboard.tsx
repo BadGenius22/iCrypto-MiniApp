@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
-import { db } from "../lib/firebase"; // Make sure this path is correct
+import { db } from "../config/firebase"; // Make sure this path is correct
 
 interface LeaderboardEntry {
   address: string;
