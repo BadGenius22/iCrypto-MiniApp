@@ -1,4 +1,5 @@
 "use client";
+import React, { useState, useEffect } from "react";
 import {
   Transaction,
   TransactionButton,
@@ -15,9 +16,11 @@ import {
   contractAddress,
 } from "../constants";
 import { getTokenAddress } from "../config/tokenConfig";
-import { TokenReward, UserProgress } from "../lib/userProgress";
+import { TokenReward } from "../lib/userProgress";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 interface TransactionWrapperProps {
   address: Address;
@@ -30,6 +33,14 @@ interface TransactionWrapperProps {
   onClaimError: (error: any) => void;
 }
 
+const fetchMerkleProof = async (address: string) => {
+  const proofDoc = await getDoc(doc(db, "merkleProofs", address));
+  if (proofDoc.exists()) {
+    return proofDoc.data().proofs;
+  }
+  throw new Error("Merkle proof not found for user");
+};
+
 export default function TransactionWrapper({
   address,
   tokenRewards,
@@ -40,10 +51,28 @@ export default function TransactionWrapper({
   onClaimSuccess,
   onClaimError,
 }: TransactionWrapperProps) {
+  const [merkleProofs, setMerkleProofs] = useState<string[][]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadMerkleProofs = async () => {
+      try {
+        const proofs = await fetchMerkleProof(address);
+        setMerkleProofs(proofs);
+      } catch (error) {
+        console.error("Error fetching Merkle proofs:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadMerkleProofs();
+  }, [address]);
+
   const claimData = {
     tokens: tokenRewards.map((reward) => getTokenAddress(reward.tokenId)),
     points: tokenRewards.map((reward) => reward.points),
-    merkleProofs: tokenRewards.map(() => []), // Empty array for now, implement merkle proof generation later
+    merkleProofs: merkleProofs,
   };
 
   const contracts = [
@@ -87,6 +116,10 @@ export default function TransactionWrapper({
       });
     }, 400);
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   if (hasClaimedRewards) {
     return (

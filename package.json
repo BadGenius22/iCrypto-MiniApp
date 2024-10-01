@@ -6,7 +6,8 @@
     "build": "next build",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "dev": "next dev"
+    "dev": "next dev",
+    "generate-merkle-tree": "ts-node scripts/generateMerkleTree.ts"
   },
   "dependencies": {
     "@coinbase/onchainkit": "^0.32.0",
@@ -19,9 +20,12 @@
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "ethers": "^6.13.3",
     "firebase": "^10.13.2",
     "framer-motion": "^11.9.0",
+    "keccak256": "^1.0.6",
     "lucide-react": "^0.446.0",
+    "merkletreejs": "^0.4.0",
     "next": "^14.2.5",
     "permissionless": "^0.1.26",
     "react": "^18",
