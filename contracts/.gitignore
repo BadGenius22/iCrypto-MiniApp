@@ -51,4 +51,9 @@ yarn-error.log*
 
 # Hardhat temporary files
 .hardhat/
+# Generated ABI files
+/abis/**/*.json
+/abis/**/*.ts
 
+# But don't ignore the abis directory itself
+!/abis/.gitkeep

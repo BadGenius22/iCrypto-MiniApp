@@ -56,16 +56,15 @@ dist
 # Node dependency directories
 node_modules
 
+# Environment variables
+.env
+
 # Ignore Hardhat's default deploy directory
 deployments
 
 # Foundry files
 out
 forge-cache
-
-# Ignore ABI and bytecode files if you generate them separately
-/abi
-/bytecode
 
 # Ignore gas report
 gas-report.txt
@@ -80,3 +79,10 @@ gas-report.txt
 # Logs
 logs
 *.log
+
+# Generated ABI files
+/abis/**/*.json
+/abis/**/*.ts
+
+# But don't ignore the abis directory itself
+!/abis/.gitkeep
