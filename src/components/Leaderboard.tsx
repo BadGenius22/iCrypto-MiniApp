@@ -17,16 +17,20 @@ const Leaderboard: React.FC = () => {
     const fetchLeaderboard = async () => {
       try {
         const usersRef = collection(db, "users");
-        const q = query(usersRef, orderBy("points", "desc"), limit(10));
+        const q = query(usersRef, orderBy("tokenRewards", "desc"), limit(10));
         const querySnapshot = await getDocs(q);
 
         const leaderboardData: LeaderboardEntry[] = querySnapshot.docs.map(
           (doc) => {
             const data = doc.data();
+            const totalPoints = data.tokenRewards.reduce(
+              (sum: number, reward: { points: number }) => sum + reward.points,
+              0
+            );
             return {
               address: doc.id,
-              level: Math.floor(data.points / 50) + 1, // Assuming level calculation
-              points: data.points,
+              level: Math.floor(totalPoints / 50) + 1,
+              points: totalPoints,
             };
           }
         );
