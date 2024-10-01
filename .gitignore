@@ -25,7 +25,6 @@ yarn-error.log*
 # local env files
 .env*.local
 
-
 # vercel
 .vercel
 
@@ -38,3 +37,7 @@ next-env.d.ts
 .idea/
 
 /data/merkle-tree-data.json
+
+# Hardhat files
+cache
+artifacts
