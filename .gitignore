@@ -36,3 +36,5 @@ next-env.d.ts
 # IDE
 .vscode/
 .idea/
+
+/data/merkle-tree-data.json

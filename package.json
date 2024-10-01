@@ -22,6 +22,7 @@
     "clsx": "^2.1.1",
     "ethers": "^6.13.3",
     "firebase": "^10.13.2",
+    "firebase-admin": "^12.6.0",
     "framer-motion": "^11.9.0",
     "keccak256": "^1.0.6",
     "lucide-react": "^0.446.0",
@@ -47,6 +48,7 @@
     "@wagmi/cli": "latest",
     "autoprefixer": "^10.4.19",
     "bufferutil": "^4.0.7",
+    "dotenv": "^16.0.3",
     "encoding": "^0.1.13",
     "jsdom": "^24.1.0",
     "lokijs": "^1.5.12",
@@ -55,10 +57,9 @@
     "prettier-plugin-solidity": "^1.4.1",
     "supports-color": "^9.4.0",
     "tailwindcss": "^3.4.0",
+    "tsx": "^4.7.1",
     "typescript": "^5.3.3",
     "utf-8-validate": "^6.0.3",
-    "vitest": "^2.0.1",
-    "tsx": "^4.7.1",
-    "dotenv": "^16.0.3"
+    "vitest": "^2.0.1"
   }
 }
