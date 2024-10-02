@@ -1,6 +1,9 @@
 {
   "singleQuote": true,
   "trailingComma": "all",
+  "printWidth": 120,
+  "tabWidth": 2,
+  "semi": true,
   "overrides": [
     {
       "files": "*.sol",
@@ -11,7 +14,18 @@
         "singleQuote": false,
         "bracketSpacing": true
       }
+    },
+    {
+      "files": ["*.ts", "*.tsx"],
+      "options": {
+        "printWidth": 120,
+        "tabWidth": 2,
+        "semi": true,
+        "singleQuote": true,
+        "trailingComma": "all",
+        "bracketSpacing": true,
+        "arrowParens": "avoid"
+      }
     }
-  ],
-  "plugins": ["prettier-plugin-solidity"]
+  ]
 }
