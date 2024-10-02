@@ -1,26 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import {
-  Transaction,
-  TransactionButton,
-  TransactionStatus,
-} from "@coinbase/onchainkit/transaction";
-import type {
-  TransactionError,
-  TransactionResponse,
-} from "@coinbase/onchainkit/transaction";
+import { Transaction, TransactionButton, TransactionStatus } from "@coinbase/onchainkit/transaction";
+import type { TransactionError, TransactionResponse } from "@coinbase/onchainkit/transaction";
 import type { Address, ContractFunctionParameters } from "viem";
-import {
-  BASE_SEPOLIA_CHAIN_ID,
-  claimRewardsABI,
-  contractAddress,
-} from "../constants";
+import { BASE_SEPOLIA_CHAIN_ID, claimRewardsABI, contractAddress } from "../constants";
 import { getTokenAddress } from "../config/tokenConfig";
 import { TokenReward } from "../lib/userProgress";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../config/firebase";
+import merkleTreeData from "../../data/merkle-tree-data.json";
 
 interface MerkleProofData {
   tokens: string[];
@@ -40,13 +28,12 @@ interface TransactionWrapperProps {
 }
 
 const fetchMerkleProof = async (address: string): Promise<MerkleProofData> => {
-  const proofDoc = await getDoc(doc(db, "merkleProofs", address));
-  if (proofDoc.exists()) {
-    const data = proofDoc.data();
+  const proofData = (merkleTreeData.userProofs as Record<string, any>)[address];
+  if (proofData) {
     return {
-      tokens: data.tokens,
-      points: data.points,
-      proofs: [data.proofs], // Wrap in array to match contract structure
+      tokens: proofData.tokens,
+      points: proofData.points,
+      proofs: proofData.proofs,
     };
   }
   throw new Error("Merkle proof not found for user");
@@ -62,8 +49,7 @@ export default function TransactionWrapper({
   onClaimSuccess,
   onClaimError,
 }: TransactionWrapperProps) {
-  const [merkleProofData, setMerkleProofData] =
-    useState<MerkleProofData | null>(null);
+  const [merkleProofData, setMerkleProofData] = useState<MerkleProofData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -147,9 +133,7 @@ export default function TransactionWrapper({
         role="alert"
       >
         <h3 className="font-bold text-xl mb-2">🎉 Rewards Claimed!</h3>
-        <p className="mb-4">
-          Congratulations! You have successfully claimed your rewards.
-        </p>
+        <p className="mb-4">Congratulations! You have successfully claimed your rewards.</p>
         {transactionHash ? (
           <p className="mt-2">
             <a
@@ -163,8 +147,7 @@ export default function TransactionWrapper({
           </p>
         ) : (
           <p className="mt-2 text-yellow-600">
-            Transaction details are being processed. Please check your wallet
-            for confirmation.
+            Transaction details are being processed. Please check your wallet for confirmation.
           </p>
         )}
       </motion.div>
@@ -186,11 +169,7 @@ export default function TransactionWrapper({
           animate={{ scale: [1, 1.05, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
-          You've earned{" "}
-          <span className="font-bold text-purple-900">
-            {points} $ICR tokens
-          </span>
-          !
+          You've earned <span className="font-bold text-purple-900">{points} $ICR tokens</span>!
         </motion.p>
         <Transaction
           contracts={contracts}
@@ -205,9 +184,7 @@ export default function TransactionWrapper({
           />
           {isClaimInitiated && (
             <TransactionStatus>
-              <div className="mt-4 text-center font-semibold">
-                Claiming your rewards...
-              </div>
+              <div className="mt-4 text-center font-semibold">Claiming your rewards...</div>
             </TransactionStatus>
           )}
         </Transaction>

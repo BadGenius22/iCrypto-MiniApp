@@ -131,13 +131,6 @@ async function generateMerkleTree(db: Firestore) {
       points: userPoints,
       proofs: userProofs,
     };
-
-    // Store proof in Firestore with a flattened structure
-    await db.doc(`merkleProofs/${userAddress}`).set({
-      tokens: userTokens,
-      points: userPoints,
-      proofs: userProofs.flat(), // Flatten the array of arrays into a single array
-    });
   }
 
   // Save Merkle tree data to JSON file in data/ folder
@@ -151,10 +144,6 @@ async function generateMerkleTree(db: Firestore) {
 
   fs.writeFileSync(jsonFilePath, JSON.stringify(merkleTreeData, null, 2));
   console.log(`Merkle tree data saved to ${jsonFilePath}`);
-
-  // Store Merkle root in Firestore
-  await db.doc("merkleRoot/current").set({ root: rootHash });
-  console.log("Merkle root stored in Firestore");
 
   return rootHash;
 }
