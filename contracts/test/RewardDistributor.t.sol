@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "../src/RewardDistributor.sol";
@@ -7,12 +7,7 @@ import "../src/RewardDistController.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-
-contract MockERC20 is ERC20 {
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        _mint(msg.sender, 1000);
-    }
-}
+import "./MockERC20.sol";
 
 contract RewardDistributorTest is Test {
     RewardDistributor public distributor;
@@ -41,6 +36,10 @@ contract RewardDistributorTest is Test {
 
         token1 = new MockERC20("ICrypto Token", "ICR");
         token2 = new MockERC20("Base Token", "Base");
+
+        // Mint 1000 tokens to the owner
+        token1.mint(owner, 1000);
+        token2.mint(owner, 1000);
 
         // Whitelist tokens
         address[] memory tokens = new address[](2);
