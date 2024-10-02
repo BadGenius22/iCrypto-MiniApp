@@ -164,27 +164,22 @@ describe("RewardDistributor Integration Tests", function () {
     expect(user2Balance).to.equal(claimAmount2);
   });
 
-  // it("should not allow double claiming", async function () {
-  //   const user1Address = "0x071c052a78cF8dBdD4F61381596ec64078d1840B";
-  //   const user1Signer = await ethers.getImpersonatedSigner(user1Address);
+  it("should not allow double claiming rewards", async function () {
+    const user1Address = "0x071c052a78cF8dBdD4F61381596ec64078d1840B";
+    const user1Signer = await ethers.getImpersonatedSigner(user1Address);
 
-  //   const claimData = merkleTreeData.userProofs[user1Address];
+    const claimData = merkleTreeData.userProofs[user1Address];
 
-  //   await expect(distributor.connect(user1Signer).claimRewards({
-  //     tokens: claimData.tokens,
-  //     points: claimData.points.map(p => ethers.parseEther(p.toString())),
-  //     merkleProofs: claimData.proofs
-  //   })).to.be.revertedWithCustomError(distributor, "HAS_CLAIMED");
-  // });
+    const claimDataStruct: RewardDistributor.ClaimDataStruct = {
+      tokens: claimData.tokens,
+      points: claimData.points.map(p => BigInt(p)),
+      merkleProofs: claimData.proofs,
+    };
 
-  // it("should allow withdrawal of unused rewards after 30 days", async function () {
-  //   await network.provider.send("evm_increaseTime", [30 * 24 * 60 * 60]); // 30 days
-  //   await network.provider.send("evm_mine");
-
-  //   const initialBalance = await token.balanceOf(await owner.getAddress());
-  //   await distributor.withdrawUnusedRewards([await token.getAddress()]);
-  //   const finalBalance = await token.balanceOf(await owner.getAddress());
-
-  //   expect(finalBalance).to.be.gt(initialBalance);
-  // });
+    // Second claim should fail
+    await expect(distributor.connect(user1Signer).claimRewards(claimDataStruct)).to.be.revertedWithCustomError(
+      distributor,
+      "HAS_CLAIMED",
+    );
+  });
 });
