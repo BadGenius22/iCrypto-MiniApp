@@ -12,7 +12,7 @@ docs/
 
 # Dotenv file
 .env
-.env*.local
+*.local
 
 /node_modules
 cache/

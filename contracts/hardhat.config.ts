@@ -22,6 +22,7 @@ const {
   ETHERSCAN_API_KEY,
   ARBISCAN_API_KEY,
   OPTIMISM_ETHERSCAN_API_KEY,
+  BASESCAN_API_KEY,
   TENDERLY_FORK_ID,
 } = process.env;
 
@@ -29,9 +30,9 @@ export const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: '0.8.20',
+        version: '0.8.24',
         settings: {
-          evmVersion: 'paris',
+          evmVersion: 'cancun',
           optimizer: {
             enabled: true,
             runs: 200,
@@ -56,6 +57,14 @@ export const config: HardhatUserConfig = {
     goerli: {
       accounts: MNEMONIC ? { mnemonic: MNEMONIC } : [DEPLOY_ACCOUNT_KEY!].filter(Boolean),
       url: `https://arb-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}`,
+    },
+    base: {
+      accounts: MNEMONIC ? { mnemonic: MNEMONIC } : [DEPLOY_ACCOUNT_KEY!].filter(Boolean),
+      url: `https://mainnet.base.org`,
+    },
+    baseSepolia: {
+      accounts: MNEMONIC ? { mnemonic: MNEMONIC } : [DEPLOY_ACCOUNT_KEY!].filter(Boolean),
+      url: `https://sepolia.base.org`,
     },
     tenderly: {
       url: `https://rpc.tenderly.co/fork/${TENDERLY_FORK_ID}`,
@@ -89,6 +98,8 @@ export const config: HardhatUserConfig = {
       arbitrumOne: ARBISCAN_API_KEY || '', // Ensure non-null value
       optimisticEthereum: OPTIMISM_ETHERSCAN_API_KEY || '', // Ensure non-null value
       mainnet: ETHERSCAN_API_KEY || '', // Ensure non-null value
+      base: BASESCAN_API_KEY || '', // Added Base mainnet
+      baseSepolia: BASESCAN_API_KEY || '', // Added Base Sepolia
     },
   },
   mocha: {
