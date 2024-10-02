@@ -1,6 +1,5 @@
 import { MerkleTree } from "merkletreejs";
-import keccak256 from "keccak256";
-import { ethers } from "ethers";
+import { Address, encodePacked, keccak256 } from "viem";
 import { Firestore } from "firebase-admin/firestore";
 import { getTokenAddress } from "../config/tokenConfig";
 import fs from "fs";
@@ -38,7 +37,7 @@ async function generateMerkleTree(db: Firestore) {
   console.log(`Found ${userSnapshot.size} users.`);
 
   const userRewards: UserReward[] = userSnapshot.docs
-    .map((doc) => {
+    .map(doc => {
       const userData = doc.data();
       console.log(`Processing user: ${doc.id}`);
       console.log(`User data:`, JSON.stringify(userData, null, 2));
@@ -49,10 +48,9 @@ async function generateMerkleTree(db: Firestore) {
       }
 
       const tokenRewards: { [tokenAddress: string]: number } = {};
-      userData.tokenRewards.forEach((reward) => {
+      userData.tokenRewards.forEach(reward => {
         const tokenAddress = getTokenAddress(reward.tokenId);
-        tokenRewards[tokenAddress] =
-          (tokenRewards[tokenAddress] || 0) + reward.points;
+        tokenRewards[tokenAddress] = (tokenRewards[tokenAddress] || 0) + reward.points;
       });
 
       return {
@@ -62,25 +60,42 @@ async function generateMerkleTree(db: Firestore) {
     })
     .filter((reward): reward is UserReward => reward !== null);
 
-  const leaves: Buffer[] = userRewards.map((reward) => {
+  // Map to hold the original leaves (before sorting) keyed by user address
+  const userLeavesMap: { [address: string]: { leaf: Buffer; token: string; points: bigint }[] } = {};
+
+  // Create leaves and store them in the map by user address
+  const leaves = userRewards.flatMap(reward => {
     const tokens = Object.keys(reward.tokenRewards);
-    const points = tokens.map((token) => reward.tokenRewards[token]);
-    const leaf = ethers.solidityPackedKeccak256(
-      ["address", "address[]", "uint256[]"],
-      [reward.address, tokens, points]
-    );
-    console.log(`Generated leaf: ${leaf}`);
-    return Buffer.from(leaf.slice(2), "hex");
+    const userLeaves = tokens.map(token => {
+      const points = BigInt(reward.tokenRewards[token]);
+
+      const packedData = encodePacked(
+        ["address", "address", "uint256"],
+        [reward.address as Address, token as Address, points],
+      );
+      const leaf = keccak256(packedData);
+
+      console.log(`Generated leaf for user ${reward.address}, token ${token}, points ${points}: ${leaf}`);
+
+      // Store the unsorted leaf for this user
+      if (!userLeavesMap[reward.address]) {
+        userLeavesMap[reward.address] = [];
+      }
+      userLeavesMap[reward.address].push({ leaf: Buffer.from(leaf.slice(2), "hex"), token, points });
+
+      return { leaf: Buffer.from(leaf.slice(2), "hex"), user: reward.address, token, points };
+    });
+    return userLeaves;
   });
 
-  if (leaves.length === 0) {
-    console.warn("No valid leaves generated from user data.");
-    return "0x";
-  }
+  // Sort leaves to ensure consistent ordering
+  leaves.sort((a, b) => a.leaf.compare(b.leaf));
 
-  console.log(`Generated ${leaves.length} leaves.`);
-
-  const merkleTree = new MerkleTree(leaves, keccak256, { sortPairs: true });
+  const merkleTree = new MerkleTree(
+    leaves.map(item => item.leaf),
+    keccak256,
+    { sortPairs: true },
+  );
   const rootHash = merkleTree.getHexRoot();
 
   console.log(`Generated Merkle root: ${rootHash}`);
@@ -88,40 +103,45 @@ async function generateMerkleTree(db: Firestore) {
   console.log("Generating and storing Merkle proofs...");
   const merkleTreeData: MerkleTreeData = {
     root: rootHash,
-    leaves: leaves.map((leaf) => "0x" + leaf.toString("hex")),
+    leaves: leaves.map(item => "0x" + item.leaf.toString("hex")),
     userProofs: {},
   };
 
-  for (const userReward of userRewards) {
-    const tokens = Object.keys(userReward.tokenRewards);
-    const points = tokens.map((token) => userReward.tokenRewards[token]);
-    const leaf = ethers.solidityPackedKeccak256(
-      ["address", "address[]", "uint256[]"],
-      [userReward.address, tokens, points]
-    );
-    const proof = merkleTree.getHexProof(Buffer.from(leaf.slice(2), "hex"));
+  // Now, generate the proofs using the original unsorted leaves from userLeavesMap
+  for (const userAddress of Object.keys(userLeavesMap)) {
+    const userLeaves = userLeavesMap[userAddress];
+    const userProofs: string[][] = [];
+    const userTokens: string[] = [];
+    const userPoints: number[] = [];
 
-    console.log(`Storing proof for user ${userReward.address}`);
-    merkleTreeData.userProofs[userReward.address] = {
-      tokens,
-      points,
-      proofs: [proof], // Store as a 2D array to match the contract structure
+    for (const leaf of userLeaves) {
+      const proof = merkleTree.getHexProof(leaf.leaf);
+
+      console.log(`Storing proof for user ${userAddress}, token ${leaf.token}, points ${leaf.points}`);
+      userProofs.push(proof);
+      userTokens.push(leaf.token);
+      userPoints.push(Number(leaf.points));
+
+      console.log(`Leaf: 0x${leaf.leaf.toString("hex")}`);
+      console.log(`Proof: ${JSON.stringify(proof)}`);
+    }
+
+    merkleTreeData.userProofs[userAddress] = {
+      tokens: userTokens,
+      points: userPoints,
+      proofs: userProofs,
     };
 
-    // Store proof in Firestore
-    await db.doc(`merkleProofs/${userReward.address}`).set({
-      tokens,
-      points,
-      proofs: proof, // Store as an array of hex strings
+    // Store proof in Firestore with a flattened structure
+    await db.doc(`merkleProofs/${userAddress}`).set({
+      tokens: userTokens,
+      points: userPoints,
+      proofs: userProofs.flat(), // Flatten the array of arrays into a single array
     });
   }
 
   // Save Merkle tree data to JSON file in data/ folder
-  const jsonFilePath = path.resolve(
-    process.cwd(),
-    "data",
-    "merkle-tree-data.json"
-  );
+  const jsonFilePath = path.resolve(process.cwd(), "data", "merkle-tree-data.json");
 
   // Ensure the data directory exists
   const dataDir = path.dirname(jsonFilePath);
