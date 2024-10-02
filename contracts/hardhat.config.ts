@@ -8,6 +8,7 @@ import { HardhatUserConfig } from 'hardhat/config';
 import '@nomicfoundation/hardhat-chai-matchers';
 import 'hardhat-tracer';
 import dotenv from 'dotenv';
+import "@typechain/hardhat";
 /* import * as tdly from '@tenderly/hardhat-tenderly'; */
 
 dotenv.config();
@@ -25,6 +26,15 @@ const {
   BASESCAN_API_KEY,
   TENDERLY_FORK_ID,
 } = process.env;
+
+// Extend the HardhatUserConfig type
+declare module "hardhat/config" {
+  interface HardhatUserConfig {
+    external_deployments?: {
+      deployments: any;
+    };
+  }
+}
 
 export const config: HardhatUserConfig = {
   solidity: {
@@ -115,6 +125,11 @@ export const config: HardhatUserConfig = {
     cache: "./cache",
     artifacts: "./artifacts"
   },
+  typechain: {
+    outDir: "typechain-types",
+    target: "ethers-v6",
+  },
+ 
 };
 
 export default config;
