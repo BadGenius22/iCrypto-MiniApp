@@ -1,5 +1,5 @@
-import '@nomiclabs/hardhat-ethers';
-import '@nomiclabs/hardhat-etherscan';
+import "@nomicfoundation/hardhat-ethers";
+import "@nomicfoundation/hardhat-verify";
 import 'solidity-coverage';
 import 'hardhat-abi-exporter';
 import 'hardhat-contract-sizer';
@@ -110,6 +110,11 @@ export const config: HardhatUserConfig = {
   //   project: process.env.TENDERLY_PROJECT!,
   //   username: process.env.TENDERLY_USERNAME!,
   // },
+  paths: {
+    sources: "./src",
+    cache: "./cache",
+    artifacts: "./artifacts"
+  },
 };
 
 export default config;
