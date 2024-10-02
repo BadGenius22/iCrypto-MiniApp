@@ -39,8 +39,6 @@ describe("RewardDistributor Integration Tests", function () {
     token = (await MockERC20Factory.deploy("ICR Token", "ICR")) as MockERC20;
     // Verify that the token has 18 decimals
     expect(await token.decimals()).to.equal(18);
-    const tokenAddress = await token.getAddress();
-    console.log("Token deployed at:", tokenAddress);
 
     // Deploy RewardDistController
     const ControllerFactory = await ethers.getContractFactory("RewardDistController");
@@ -77,9 +75,6 @@ describe("RewardDistributor Integration Tests", function () {
 
     // Update Merkle root
     await controller.updateMerkleRoot(merkleTreeData.root);
-    // Verify that the contract has the correct Merkle root
-    const contractRoot = await controller.getMerkleRoot();
-    console.log("Contract Merkle Root:", contractRoot);
   });
 
   it("should deposit rewards and collect fees correctly", async function () {
@@ -112,7 +107,7 @@ describe("RewardDistributor Integration Tests", function () {
     expect(finalOwnerBalance).to.equal(initialOwnerBalance + BigInt(ethers.parseEther("2"))); // 0.2% fee
   });
 
-  it.only("should allow users to claim rewards", async function () {
+  it("should allow users to claim rewards", async function () {
     const [, depositor] = await ethers.getSigners();
     const depositAmount = ethers.parseEther("2000"); // Increased to cover both claims
     const tokens = [await token.getAddress()];
@@ -193,16 +188,3 @@ describe("RewardDistributor Integration Tests", function () {
   //   expect(finalBalance).to.be.gt(initialBalance);
   // });
 });
-
-// Add this helper function to verify the Merkle proof
-function verifyMerkleProof(proof: string[], root: string, leaf: string): boolean {
-  let computedHash = leaf;
-  for (const proofElement of proof) {
-    if (computedHash < proofElement) {
-      computedHash = keccak256(encodePacked(["bytes32", "bytes32"], [computedHash, proofElement]));
-    } else {
-      computedHash = keccak256(encodePacked(["bytes32", "bytes32"], [proofElement, computedHash]));
-    }
-  }
-  return computedHash === root;
-}
