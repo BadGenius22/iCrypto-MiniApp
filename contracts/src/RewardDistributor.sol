@@ -174,13 +174,12 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
             claimData.tokens.length != claimData.merkleProofs.length
         ) revert INVALID_INPUT_LENGTH();
 
-        // Fetch the merkleRoot
-        bytes32 merkleRoot = rewardDistController.getMerkleRoot();
-
         for (uint256 i = 0; i < claimData.tokens.length; i++) {
+            // Fetch the merkleRoot
+            bytes32 merkleRoot = rewardDistController.getMerkleRoot();
+
             address token = claimData.tokens[i];
             uint256 points = claimData.points[i];
-            bytes32[] memory merkleProof = claimData.merkleProofs[i];
 
             // Check if the user has already claimed for this token
             if (hasClaimed[token][msg.sender]) {
@@ -188,7 +187,7 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
             }
 
             bytes32 leaf = keccak256(abi.encodePacked(msg.sender, token, points));
-            if (!MerkleProof.verify(merkleProof, merkleRoot, leaf)) revert INVALID_PROOF();
+            if (!MerkleProof.verify(claimData.merkleProofs[i], merkleRoot, leaf)) revert INVALID_PROOF();
 
             // Mark as claimed for this token
             hasClaimed[token][msg.sender] = true;
