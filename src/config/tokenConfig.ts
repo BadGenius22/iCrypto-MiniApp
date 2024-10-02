@@ -3,7 +3,7 @@ interface TokenConfig {
 }
 
 const tokenConfig: TokenConfig = {
-  1: "0x1234567890123456789012345678901234567890", // Replace with actual token address
+  1: "0x5e6CB7E728E1C320855587E1D9C6F7972ebdD6D5", // Replace with actual token address
   // Add more token mappings as needed
 };
 
