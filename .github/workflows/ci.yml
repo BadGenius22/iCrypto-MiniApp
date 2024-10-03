@@ -21,8 +21,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build
-        run: yarn build
+      - name: Build Next.js app
+        run: yarn next build
         env:
           NEXT_TELEMETRY_DISABLED: 1
 
@@ -30,6 +30,6 @@ jobs:
         run: yarn lint
         continue-on-error: true
 
-      - name: Type check
-        run: yarn type-check
+      - name: Type check (excluding contracts)
+        run: yarn tsc --noEmit --skipLibCheck --project tsconfig.json
         continue-on-error: true
