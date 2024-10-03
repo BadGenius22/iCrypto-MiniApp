@@ -6,15 +6,18 @@ const nextConfig = {
     BASE_SEPOLIA_RPC_URL: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
     BASE_SEPOLIA_CHAIN_ID: String(process.env.BASE_SEPOLIA_CHAIN_ID || ''),
   },
-  webpack: (config) => {
-    // Ensure watchOptions exists
-    config.watchOptions = config.watchOptions || {};
+  webpack: (config, { isServer }) => {
+    // Exclude contracts directory from webpack processing
+    config.externals = [...(config.externals || []), 'hardhat'];
 
-    // Add contracts directory to ignored list
-    config.watchOptions.ignored = [
-      ...(Array.isArray(config.watchOptions.ignored) ? config.watchOptions.ignored : []),
-      '**/contracts/**',
-    ];
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
 
     return config;
   },
