@@ -12,7 +12,10 @@ describe("RewardDistributor Integration Tests", function () {
   let controller: RewardDistController;
   let token: MockERC20;
 
-  before(async function () {
+  const user1Address = "0x071c052a78cF8dBdD4F61381596ec64078d1840B";
+  const user2Address = "0xE755f77162bF252AE289482EDA6f48f4C0190306";
+
+  beforeEach(async function () {
     // Switch to Base Sepolia network
     await network.provider.request({
       method: "hardhat_reset",
@@ -28,9 +31,9 @@ describe("RewardDistributor Integration Tests", function () {
 
     [owner] = await ethers.getSigners();
 
-    // Use the correct address for user1
-    user1 = await ethers.getImpersonatedSigner("0x071c052a78cF8dBdD4F61381596ec64078d1840B");
-    user2 = await ethers.getImpersonatedSigner("0xE755f77162bF252AE289482EDA6f48f4C0190306");
+    // Use the correct address for user1 and user2
+    user1 = await ethers.getImpersonatedSigner(user1Address);
+    user2 = await ethers.getImpersonatedSigner(user2Address);
 
     // Deploy MockERC20
     const MockERC20Factory = await ethers.getContractFactory("MockERC20");
@@ -119,19 +122,14 @@ describe("RewardDistributor Integration Tests", function () {
     await token.connect(depositor).approve(await distributor.getAddress(), depositAmount);
     await distributor.connect(depositor).depositRewards(tokens, amounts);
 
-    const user1Address = "0x071c052a78cF8dBdD4F61381596ec64078d1840B";
-    const user2Address = "0xE755f77162bF252AE289482EDA6f48f4C0190306";
-    const user1Signer = await ethers.getImpersonatedSigner(user1Address);
-    const user2Signer = await ethers.getImpersonatedSigner(user2Address);
-
     // Add funds to user1 and user2 by transferring from a funded account
     const [fundedAccount] = await ethers.getSigners();
     await fundedAccount.sendTransaction({
-      to: user1Address,
+      to: await user1.getAddress(),
       value: ethers.parseEther("1.0"),
     });
     await fundedAccount.sendTransaction({
-      to: user2Address,
+      to: await user2.getAddress(),
       value: ethers.parseEther("1.0"),
     });
 
@@ -145,7 +143,7 @@ describe("RewardDistributor Integration Tests", function () {
       merkleProofs: claimData1.proofs,
     };
 
-    await distributor.connect(user1Signer).claimRewards(claimDataStruct1);
+    await distributor.connect(user1).claimRewards(claimDataStruct1);
 
     const user1Balance = await token.balanceOf(user1Address);
     expect(user1Balance).to.equal(claimAmount1);
@@ -160,15 +158,28 @@ describe("RewardDistributor Integration Tests", function () {
       merkleProofs: claimData2.proofs,
     };
 
-    await distributor.connect(user2Signer).claimRewards(claimDataStruct2);
+    await distributor.connect(user2).claimRewards(claimDataStruct2);
 
     const user2Balance = await token.balanceOf(user2Address);
     expect(user2Balance).to.equal(claimAmount2);
   });
 
   it("should not allow double claiming rewards", async function () {
-    const user1Address = "0x071c052a78cF8dBdD4F61381596ec64078d1840B";
-    const user1Signer = await ethers.getImpersonatedSigner(user1Address);
+    const [, depositor] = await ethers.getSigners();
+    const depositAmount = ethers.parseEther("2000");
+    const tokens = [await token.getAddress()];
+    const amounts = [depositAmount];
+
+    // Approve and deposit
+    await token.connect(depositor).approve(await distributor.getAddress(), depositAmount);
+    await distributor.connect(depositor).depositRewards(tokens, amounts);
+
+    // Add funds to user1 by transferring from a funded account
+    const [fundedAccount] = await ethers.getSigners();
+    await fundedAccount.sendTransaction({
+      to: await user1.getAddress(),
+      value: ethers.parseEther("1.0"),
+    });
 
     const claimData = merkleTreeData.userProofs[user1Address];
 
@@ -178,9 +189,12 @@ describe("RewardDistributor Integration Tests", function () {
       merkleProofs: claimData.proofs,
     };
 
+    // First claim should succeed
+    await distributor.connect(user1).claimRewards(claimDataStruct);
+
     // Second claim should fail
     await expect(
-      distributor.connect(user1Signer).claimRewards(claimDataStruct),
+      distributor.connect(user1).claimRewards(claimDataStruct),
     ).to.be.revertedWithCustomError(distributor, "HAS_CLAIMED");
   });
 });
