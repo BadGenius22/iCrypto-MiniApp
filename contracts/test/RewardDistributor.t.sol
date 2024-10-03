@@ -7,7 +7,7 @@ import "../src/RewardDistController.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "../src/token/MockERC20.sol";
+import "../src/tokens/MockERC20.sol";
 
 contract RewardDistributorTest is Test {
     RewardDistributor public distributor;

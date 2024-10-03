@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { ICryptoToken } from "../src/token/ICryptoToken.sol";
+import { ICryptoToken } from "../src/tokens/ICryptoToken.sol";
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
