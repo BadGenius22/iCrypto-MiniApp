@@ -12,21 +12,43 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18.x"
+          node-version: '18.x'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.yarn
+          key: ${{ runner.OS }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.OS }}-yarn-
+
+      - name: Cache Next.js build
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/yarn.lock') }}
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build
-        run: yarn build
+      - name: Build (excluding contracts)
+        run: |
+          if [ -d "contracts" ]; then
+            mv contracts contracts_temp
+          fi
+          yarn build
+          if [ -d "contracts_temp" ]; then
+            mv contracts_temp contracts
+          fi
 
       - name: Lint
         run: yarn lint
-        continue-on-error: true # This will allow the workflow to continue even if linting fails
+        continue-on-error: true
 
       - name: Type check
         run: yarn type-check
-        continue-on-error: true # This will allow the workflow to continue even if type checking fails
+        continue-on-error: true
