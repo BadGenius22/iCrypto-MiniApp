@@ -2,9 +2,7 @@ import { ethers, upgrades, network } from "hardhat";
 import { expect } from "chai";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { RewardDistributor, RewardDistController, MockERC20 } from "typechain-types";
-import merkleTreeData from "../../data/merkle-tree-data.json";
-import { Contract } from "ethers";
-import { encodePacked, keccak256 } from "viem";
+import merkleTreeData from "../../src/data/merkle-tree-data.json";
 
 describe("RewardDistributor Integration Tests", function () {
   let owner: SignerWithAddress;
@@ -54,7 +52,9 @@ describe("RewardDistributor Integration Tests", function () {
     // Deploy RewardDistributor
     const DistributorFactory = await ethers.getContractFactory("RewardDistributor");
     const distributorImp = await DistributorFactory.deploy();
-    const initData2 = DistributorFactory.interface.encodeFunctionData("initialize", [await controller.getAddress()]);
+    const initData2 = DistributorFactory.interface.encodeFunctionData("initialize", [
+      await controller.getAddress(),
+    ]);
     const proxyDistributorAddress = await ethers.deployContract("TransparentUpgradeableProxy", [
       await distributorImp.getAddress(),
       await owner.getAddress(),
@@ -98,7 +98,9 @@ describe("RewardDistributor Integration Tests", function () {
     const finalOwnerBalance = await token.balanceOf(await owner.getAddress());
 
     // Check distributor balance
-    expect(finalDistributorBalance).to.equal(initialDistributorBalance + BigInt(ethers.parseEther("998"))); // 998 from deposit (0.2% fee deducted)
+    expect(finalDistributorBalance).to.equal(
+      initialDistributorBalance + BigInt(ethers.parseEther("998")),
+    ); // 998 from deposit (0.2% fee deducted)
 
     // Check depositor balance
     expect(finalDepositorBalance).to.equal(initialDepositorBalance - BigInt(depositAmount));
@@ -177,9 +179,8 @@ describe("RewardDistributor Integration Tests", function () {
     };
 
     // Second claim should fail
-    await expect(distributor.connect(user1Signer).claimRewards(claimDataStruct)).to.be.revertedWithCustomError(
-      distributor,
-      "HAS_CLAIMED",
-    );
+    await expect(
+      distributor.connect(user1Signer).claimRewards(claimDataStruct),
+    ).to.be.revertedWithCustomError(distributor, "HAS_CLAIMED");
   });
 });

@@ -142,10 +142,10 @@ async function generateMerkleTree(db: Firestore) {
     };
   }
 
-  // Save Merkle tree data to JSON file in data/ folder
-  const jsonFilePath = path.resolve(process.cwd(), "data", "merkle-tree-data.json");
+  // Save Merkle tree data to JSON file in src/data/ folder
+  const jsonFilePath = path.resolve(process.cwd(), "src", "data", "merkle-tree-data.json");
 
-  // Ensure the data directory exists
+  // Ensure the src/data directory exists
   const dataDir = path.dirname(jsonFilePath);
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });

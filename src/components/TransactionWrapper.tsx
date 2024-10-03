@@ -1,6 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Transaction, TransactionButton, TransactionStatus } from "@coinbase/onchainkit/transaction";
+import {
+  Transaction,
+  TransactionButton,
+  TransactionStatus,
+} from "@coinbase/onchainkit/transaction";
 import type { TransactionError, TransactionResponse } from "@coinbase/onchainkit/transaction";
 import type { Address, ContractFunctionParameters } from "viem";
 import { BASE_SEPOLIA_CHAIN_ID, claimRewardsABI, contractAddress } from "../constants";
@@ -8,7 +12,7 @@ import { getTokenAddress } from "../config/tokenConfig";
 import { TokenReward } from "../lib/userProgress";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
-import merkleTreeData from "../../data/merkle-tree-data.json";
+import merkleTreeData from "../data/merkle-tree-data.json";
 
 interface MerkleProofData {
   tokens: string[];
