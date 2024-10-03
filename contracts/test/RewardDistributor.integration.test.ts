@@ -3,6 +3,8 @@ import { expect } from "chai";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { RewardDistributor, RewardDistController, MockERC20 } from "typechain-types";
 import merkleTreeData from "../../src/data/merkle-tree-data.json";
+import { claimRewardsABI } from "../../src/constants";
+import { ContractFunctionParameters } from "viem";
 
 describe("RewardDistributor Integration Tests", function () {
   let owner: SignerWithAddress;
@@ -196,5 +198,75 @@ describe("RewardDistributor Integration Tests", function () {
     await expect(
       distributor.connect(user1).claimRewards(claimDataStruct),
     ).to.be.revertedWithCustomError(distributor, "HAS_CLAIMED");
+  });
+
+  it("should mimic frontend TransactionWrapper claiming process", async function () {
+    const [, depositor] = await ethers.getSigners();
+    const depositAmount = ethers.parseEther("2000");
+    const tokens = [await token.getAddress()];
+    const amounts = [depositAmount];
+
+    // Approve and deposit
+    await token.connect(depositor).approve(await distributor.getAddress(), depositAmount);
+    await distributor.connect(depositor).depositRewards(tokens, amounts);
+
+    // Add funds to user1 by transferring from a funded account
+    const [fundedAccount] = await ethers.getSigners();
+    await fundedAccount.sendTransaction({
+      to: user1Address,
+      value: ethers.parseEther("1.0"),
+    });
+
+    // Mimic the fetchMerkleProof function from TransactionWrapper
+    const fetchMerkleProof = async (address: string) => {
+      const proofData = merkleTreeData.userProofs[user1Address];
+
+      if (proofData) {
+        return {
+          tokens: proofData.tokens,
+          points: proofData.points,
+          proofs: proofData.proofs,
+        };
+      }
+      throw new Error("Merkle proof not found for user");
+    };
+
+    // Fetch merkle proof data
+    const merkleProofData = await fetchMerkleProof(user1Address);
+
+    // Prepare claim data as in TransactionWrapper
+    const claimData = {
+      tokens: merkleProofData.tokens,
+      points: merkleProofData.points.map(p => BigInt(p)),
+      merkleProofs: merkleProofData.proofs,
+    };
+
+    // Prepare contract parameters as in TransactionWrapper
+    const contracts = [
+      {
+        address: await distributor.getAddress(),
+        abi: claimRewardsABI,
+        functionName: "claimRewards",
+        args: [claimData],
+      },
+    ] as unknown as ContractFunctionParameters[];
+
+    // Simulate the transaction execution
+    const tx = await distributor.connect(user1).claimRewards(claimData);
+    const receipt = await tx.wait();
+
+    // Verify the claim was successful
+    const user1Balance = await token.balanceOf(user1Address);
+    expect(user1Balance).to.equal(BigInt(merkleProofData.points[0]));
+
+    // Verify the transaction hash
+    expect(receipt?.hash).to.be.a("string");
+    // console.log("Transaction hash:", receipt?.hash);
+
+    // Attempt double claim (should fail)
+    await expect(distributor.connect(user1).claimRewards(claimData)).to.be.revertedWithCustomError(
+      distributor,
+      "HAS_CLAIMED",
+    );
   });
 });

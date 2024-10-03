@@ -8,7 +8,6 @@ import {
 import type { TransactionError, TransactionResponse } from "@coinbase/onchainkit/transaction";
 import type { Address, ContractFunctionParameters } from "viem";
 import { BASE_SEPOLIA_CHAIN_ID, claimRewardsABI, contractAddress } from "../constants";
-import { getTokenAddress } from "../config/tokenConfig";
 import { TokenReward } from "../lib/userProgress";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
