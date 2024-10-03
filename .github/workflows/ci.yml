@@ -35,15 +35,10 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build (excluding contracts)
-        run: |
-          if [ -d "contracts" ]; then
-            mv contracts contracts_temp
-          fi
-          yarn build
-          if [ -d "contracts_temp" ]; then
-            mv contracts_temp contracts
-          fi
+      - name: Build
+        run: yarn build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
 
       - name: Lint
         run: yarn lint
