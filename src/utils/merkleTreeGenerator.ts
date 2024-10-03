@@ -61,7 +61,8 @@ async function generateMerkleTree(db: Firestore) {
     .filter((reward): reward is UserReward => reward !== null);
 
   // Map to hold the original leaves (before sorting) keyed by user address
-  const userLeavesMap: { [address: string]: { leaf: Buffer; token: string; points: bigint }[] } = {};
+  const userLeavesMap: { [address: string]: { leaf: Buffer; token: string; points: bigint }[] } =
+    {};
 
   // Create leaves and store them in the map by user address
   const leaves = userRewards.flatMap(reward => {
@@ -75,13 +76,19 @@ async function generateMerkleTree(db: Firestore) {
       );
       const leaf = keccak256(packedData);
 
-      console.log(`Generated leaf for user ${reward.address}, token ${token}, points ${points}: ${leaf}`);
+      console.log(
+        `Generated leaf for user ${reward.address}, token ${token}, points ${points}: ${leaf}`,
+      );
 
       // Store the unsorted leaf for this user
       if (!userLeavesMap[reward.address]) {
         userLeavesMap[reward.address] = [];
       }
-      userLeavesMap[reward.address].push({ leaf: Buffer.from(leaf.slice(2), "hex"), token, points });
+      userLeavesMap[reward.address].push({
+        leaf: Buffer.from(leaf.slice(2), "hex"),
+        token,
+        points,
+      });
 
       return { leaf: Buffer.from(leaf.slice(2), "hex"), user: reward.address, token, points };
     });
@@ -117,7 +124,9 @@ async function generateMerkleTree(db: Firestore) {
     for (const leaf of userLeaves) {
       const proof = merkleTree.getHexProof(leaf.leaf);
 
-      console.log(`Storing proof for user ${userAddress}, token ${leaf.token}, points ${leaf.points}`);
+      console.log(
+        `Storing proof for user ${userAddress}, token ${leaf.token}, points ${leaf.points}`,
+      );
       userProofs.push(proof);
       userTokens.push(leaf.token);
       userPoints.push(Number(leaf.points));
