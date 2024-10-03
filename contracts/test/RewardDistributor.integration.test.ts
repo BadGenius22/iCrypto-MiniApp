@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { RewardDistributor, RewardDistController, MockERC20 } from "typechain-types";
 import merkleTreeData from "../../src/data/merkle-tree-data.json";
-import { claimRewardsABI } from "../../src/constants";
+import { claimRewardsABI, contractAddress } from "../../src/constants";
 import { ContractFunctionParameters } from "viem";
 
 describe("RewardDistributor Integration Tests", function () {
@@ -246,22 +246,27 @@ describe("RewardDistributor Integration Tests", function () {
       {
         address: await distributor.getAddress(),
         abi: claimRewardsABI,
-        functionName: "claimRewards",
-        args: [claimData],
+        functionName: "claimRewards" as RewardDistributorFunctions,
+        args: [claimData as RewardDistributor.ClaimDataStruct],
       },
     ] as unknown as ContractFunctionParameters[];
 
-    // Simulate the transaction execution
-    const tx = await distributor.connect(user1).claimRewards(claimData);
+    // Use the contracts array to execute the transaction
+    const contract = contracts[0];
+    const tx = await user1.sendTransaction({
+      to: contract.address,
+      data: distributor.interface.encodeFunctionData("claimRewards", [
+        claimData as RewardDistributor.ClaimDataStruct,
+      ]),
+    });
+    // Verify the transaction hash
     const receipt = await tx.wait();
+    expect(receipt?.hash).to.be.a("string");
+    // console.log("Transaction hash:", receipt?.hash);
 
     // Verify the claim was successful
     const user1Balance = await token.balanceOf(user1Address);
     expect(user1Balance).to.equal(BigInt(merkleProofData.points[0]));
-
-    // Verify the transaction hash
-    expect(receipt?.hash).to.be.a("string");
-    // console.log("Transaction hash:", receipt?.hash);
 
     // Attempt double claim (should fail)
     await expect(distributor.connect(user1).claimRewards(claimData)).to.be.revertedWithCustomError(
@@ -269,4 +274,6 @@ describe("RewardDistributor Integration Tests", function () {
       "HAS_CLAIMED",
     );
   });
+
+  type RewardDistributorFunctions = "claimRewards"; // Add other function names if needed
 });
