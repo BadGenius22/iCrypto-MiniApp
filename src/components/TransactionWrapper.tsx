@@ -181,11 +181,15 @@ export default function TransactionWrapper({
           onSuccess={handleSuccess}
         >
           <TransactionButton
-            className="px-8 py-4 rounded-full font-bold text-xl transition duration-300 bg-purple-600 hover:bg-purple-700 text-white transform hover:scale-105 shadow-lg"
-            text="🎉 Claim $ICR Tokens Now! 🎉"
-            disabled={isClaimInitiated}
+            className={`px-8 py-4 rounded-full font-bold text-xl transition duration-300 ${
+              hasClaimedRewards
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-purple-600 hover:bg-purple-700 transform hover:scale-105"
+            } text-white shadow-lg`}
+            text={hasClaimedRewards ? "Rewards Already Claimed" : "🎉 Claim $ICR Tokens Now! 🎉"}
+            disabled={isClaimInitiated || hasClaimedRewards}
           />
-          {isClaimInitiated && (
+          {isClaimInitiated && !hasClaimedRewards && (
             <TransactionStatus>
               <div className="mt-4 text-center font-semibold">Claiming your rewards...</div>
             </TransactionStatus>
