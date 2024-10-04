@@ -21,15 +21,15 @@ contract ICryptoToken is Initializable, ERC20Upgradeable, ERC20BurnableUpgradeab
         _mint(msg.sender, 100_000_000 * 10 ** decimals());
     }
 
-    // =============================================================
-    //                 Override ERC20 to ERC20Vote
-    // =============================================================
-
     function _update(
         address from,
         address to,
         uint256 value
-    ) internal virtual override(ERC20Upgradeable, ERC20VotesUpgradeable) {
+    ) internal override(ERC20Upgradeable, ERC20VotesUpgradeable) {
         super._update(from, to, value);
+    }
+
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+        return _domainSeparatorV4();
     }
 }
