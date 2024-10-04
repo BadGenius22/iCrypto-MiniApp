@@ -118,6 +118,9 @@ export const config: HardhatUserConfig = {
     outDir: "typechain-types",
     target: "ethers-v6",
   },
+  sourcify: {
+    enabled: false,
+  },
 };
 
 export default config;
