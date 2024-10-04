@@ -148,8 +148,8 @@ async function generateMerkleTree(db: Firestore) {
   // Create file name with timestamp
   const fileName = `merkle-tree-data-${timestamp}.json`;
 
-  // Save Merkle tree data to JSON file in src/data/ folder
-  const jsonFilePath = path.resolve(process.cwd(), "src", "data", fileName);
+  // Save Merkle tree data to JSON file in src/data/logs folder
+  const jsonFilePath = path.resolve(process.cwd(), "src", "data", "logs", fileName);
 
   // Ensure the src/data directory exists
   const dataDir = path.dirname(jsonFilePath);
