@@ -81,6 +81,7 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
 
     IRewardDistController private rewardDistController;
     uint256 private constant WITHDRAWAL_DELAY = 30 days;
+    uint256 private constant POINTS_MULTIPLIER = 1e18;
 
     // =============================================================
     //                      Functions
@@ -193,7 +194,8 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
             hasClaimed[token][msg.sender] = true;
 
             uint256 totalRewards = totalDepositedRewards[token];
-            uint256 claimableReward = points;
+            // Scale the points to match the token's decimals
+            uint256 claimableReward = points * POINTS_MULTIPLIER;
 
             // Ensure the contract has enough tokens to fulfill the claim
             if (claimableReward > totalRewards) revert INSUFFICIENT_REWARDS();
