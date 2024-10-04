@@ -174,27 +174,15 @@ export default function TransactionWrapper({
         >
           You've earned <span className="font-bold text-purple-900">{points} $ICR tokens</span>!
         </motion.p>
-        <Transaction
-          contracts={contracts}
-          chainId={BASE_SEPOLIA_CHAIN_ID}
-          onError={onClaimError}
-          onSuccess={handleSuccess}
+        <button
+          className="px-8 py-4 rounded-full font-bold text-xl transition duration-300 bg-gray-400 cursor-not-allowed text-white shadow-lg"
+          disabled={true}
         >
-          <TransactionButton
-            className={`px-8 py-4 rounded-full font-bold text-xl transition duration-300 ${
-              hasClaimedRewards
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-purple-600 hover:bg-purple-700 transform hover:scale-105"
-            } text-white shadow-lg`}
-            text={hasClaimedRewards ? "Rewards Already Claimed" : "🎉 Claim $ICR Tokens Now! 🎉"}
-            disabled={isClaimInitiated || hasClaimedRewards}
-          />
-          {isClaimInitiated && !hasClaimedRewards && (
-            <TransactionStatus>
-              <div className="mt-4 text-center font-semibold">Claiming your rewards...</div>
-            </TransactionStatus>
-          )}
-        </Transaction>
+          Claim when Token $ICR Launch on Base
+        </button>
+        <p className="mt-4 text-sm text-white">
+          Stay tuned for the official launch of $ICR on Base!
+        </p>
       </div>
     </motion.div>
   );
