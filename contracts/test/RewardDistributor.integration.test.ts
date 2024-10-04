@@ -2,9 +2,9 @@ import { ethers, upgrades, network } from "hardhat";
 import { expect } from "chai";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { RewardDistributor, RewardDistController, MockERC20 } from "typechain-types";
-import merkleTreeData from "../../src/data/merkle-tree-data.json";
 import { claimRewardsABI, contractAddress } from "../../src/constants";
 import { ContractFunctionParameters } from "viem";
+import merkleTreeData from "../../src/data/merkle-tree-data.test.json";
 
 describe("RewardDistributor Integration Tests", function () {
   let owner: SignerWithAddress;

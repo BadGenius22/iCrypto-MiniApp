@@ -11,7 +11,7 @@ import { BASE_SEPOLIA_CHAIN_ID, claimRewardsABI, contractAddress } from "../cons
 import { TokenReward } from "../lib/userProgress";
 import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
-import merkleTreeData from "../data/merkle-tree-data.json";
+import merkleTreeData from "../data/merkle-tree-data.production.json";
 
 interface MerkleProofData {
   tokens: string[];

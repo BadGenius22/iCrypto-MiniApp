@@ -1,0 +1,19 @@
+{
+  "root": "0x48bb68f9b684a29f8acfd2fc053ddc7b1f37a0f3a3826969a868c362fc25038b",
+  "leaves": [
+    "0x06f6dd5394a7be1cd661f96a2ce91300ec60f106c8e3f6134d9c5fafe2fd66bb",
+    "0x7c85223289be0276bac58b6013b9f31febb3f6091596a183cb96c651dc1dae71"
+  ],
+  "userProofs": {
+    "0x071c052a78cF8dBdD4F61381596ec64078d1840B": {
+      "tokens": ["0x5e6CB7E728E1C320855587E1D9C6F7972ebdD6D5"],
+      "points": [25],
+      "proofs": [["0x7c85223289be0276bac58b6013b9f31febb3f6091596a183cb96c651dc1dae71"]]
+    },
+    "0xE755f77162bF252AE289482EDA6f48f4C0190306": {
+      "tokens": ["0x5e6CB7E728E1C320855587E1D9C6F7972ebdD6D5"],
+      "points": [15],
+      "proofs": [["0x06f6dd5394a7be1cd661f96a2ce91300ec60f106c8e3f6134d9c5fafe2fd66bb"]]
+    }
+  }
+}

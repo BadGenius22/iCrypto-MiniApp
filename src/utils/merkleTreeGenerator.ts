@@ -142,8 +142,14 @@ async function generateMerkleTree(db: Firestore) {
     };
   }
 
+  // Generate timestamp for the file name
+  const timestamp = new Date().toISOString().replace(/[:T]/g, "-").replace(/\..+/, "");
+
+  // Create file name with timestamp
+  const fileName = `merkle-tree-data-${timestamp}.json`;
+
   // Save Merkle tree data to JSON file in src/data/ folder
-  const jsonFilePath = path.resolve(process.cwd(), "src", "data", "merkle-tree-data.json");
+  const jsonFilePath = path.resolve(process.cwd(), "src", "data", fileName);
 
   // Ensure the src/data directory exists
   const dataDir = path.dirname(jsonFilePath);
