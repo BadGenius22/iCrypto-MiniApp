@@ -15,6 +15,6 @@
       "typechain-types": ["./contracts/typechain-types"]
     }
   },
-  "include": ["./test", "./scripts", "./typechain-types", "../src"],
+  "include": ["./test", "./scripts", "./typechain-types", "../src", "./tasks/"],
   "files": ["./hardhat.config.ts"]
 }
