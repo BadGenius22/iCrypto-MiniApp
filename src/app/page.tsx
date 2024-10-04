@@ -1,6 +1,5 @@
 "use client";
 import Footer from "src/components/Footer";
-import WalletWrapper from "src/components/WalletWrapper";
 import { WEBSITE_LINK } from "src/links";
 import { useAccount } from "wagmi";
 import LoginButton from "../components/LoginButton";
@@ -36,15 +35,11 @@ export default function Page() {
         <HeroSection />
         <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
-            {address ? (
+            {address && (
               <TaskSection
                 address={address}
                 initialProgress={null} // You might want to fetch this data
               />
-            ) : (
-              <div className="bg-white p-4 rounded-lg shadow-lg flex items-center justify-center h-[80px]">
-                <WalletWrapper className="w-full max-w-md" text="Masuk untuk mulai belajar" />
-              </div>
             )}
           </div>
           <div>
