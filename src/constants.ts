@@ -1,7 +1,7 @@
 import { Abi } from "viem";
 
 export const BASE_SEPOLIA_CHAIN_ID = 84532;
-export const contractAddress = "0xA3e40bBe8E8579Cd2619Ef9C6fEA362b760dac9f";
+export const contractAddress = "0x50F23827A5d1082a227C0f6C4813890Ee3553BEf";
 
 export const claimRewardsABI: Abi = [
   {
