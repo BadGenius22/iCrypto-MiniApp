@@ -137,7 +137,7 @@ describe("RewardDistributor Integration Tests", function () {
 
     // User 1 claim
     const claimData1 = merkleTreeData.userProofs[user1Address];
-    const claimAmount1 = BigInt(claimData1.points[0]);
+    const claimAmount1 = ethers.parseEther(claimData1.points[0].toString());
 
     const claimDataStruct1: RewardDistributor.ClaimDataStruct = {
       tokens: claimData1.tokens,
@@ -152,7 +152,7 @@ describe("RewardDistributor Integration Tests", function () {
 
     // User 2 claim
     const claimData2 = merkleTreeData.userProofs[user2Address];
-    const claimAmount2 = BigInt(claimData2.points[0]);
+    const claimAmount2 = ethers.parseEther(claimData2.points[0].toString());
 
     const claimDataStruct2: RewardDistributor.ClaimDataStruct = {
       tokens: claimData2.tokens,
@@ -266,7 +266,7 @@ describe("RewardDistributor Integration Tests", function () {
 
     // Verify the claim was successful
     const user1Balance = await token.balanceOf(user1Address);
-    expect(user1Balance).to.equal(BigInt(merkleProofData.points[0]));
+    expect(user1Balance).to.equal(ethers.parseEther(merkleProofData.points[0].toString()));
 
     // Attempt double claim (should fail)
     await expect(distributor.connect(user1).claimRewards(claimData)).to.be.revertedWithCustomError(

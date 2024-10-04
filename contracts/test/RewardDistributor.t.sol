@@ -18,6 +18,8 @@ contract RewardDistributorTest is Test {
     address public user1;
     address public user2;
 
+    uint256 constant DECIMALS = 1e18;
+
     function setUp() public {
         owner = address(this);
         user1 = address(0x1);
@@ -38,16 +40,16 @@ contract RewardDistributorTest is Test {
         token2 = new MockERC20("Base Token", "Base");
 
         // Mint 1000 tokens to the owner
-        token1.mint(owner, 1000);
-        token2.mint(owner, 1000);
+        token1.mint(owner, 1000 * DECIMALS);
+        token2.mint(owner, 1000 * DECIMALS);
 
         // Whitelist tokens
         address[] memory tokens = new address[](2);
         tokens[0] = address(token1);
         tokens[1] = address(token2);
         uint256[] memory minAmounts = new uint256[](2);
-        minAmounts[0] = 100;
-        minAmounts[1] = 100;
+        minAmounts[0] = 100 * DECIMALS;
+        minAmounts[1] = 100 * DECIMALS;
         controller.addToWhitelist(tokens, minAmounts);
         // Set fee and fee recipient
         controller.setRewardFee(2e15); // 0.2%
@@ -55,7 +57,7 @@ contract RewardDistributorTest is Test {
     }
 
     function testDepositRewards() public {
-        uint256 depositAmount = 1000;
+        uint256 depositAmount = 1000 * DECIMALS;
         token1.approve(address(distributor), depositAmount);
 
         address[] memory tokens = new address[](1);
@@ -65,13 +67,13 @@ contract RewardDistributorTest is Test {
 
         distributor.depositRewards(tokens, amounts);
 
-        assertEq(token1.balanceOf(address(distributor)), 998); // 99.8% of deposit
-        assertEq(token1.balanceOf(address(0xfee)), 2); // 0.2% fee
+        assertEq(token1.balanceOf(address(distributor)), 998 * DECIMALS); // 99.8% of deposit
+        assertEq(token1.balanceOf(address(0xfee)), 2 * DECIMALS); // 0.2% fee
     }
 
     function testClaimRewards() public {
         // Deposit rewards
-        uint256 depositAmount = 1000;
+        uint256 depositAmount = 1000 * DECIMALS;
         token1.approve(address(distributor), depositAmount);
         address[] memory tokens = new address[](1);
         tokens[0] = address(token1);
@@ -105,13 +107,13 @@ contract RewardDistributorTest is Test {
         );
 
         // Verify claim
-        assertEq(token1.balanceOf(user1), 500);
+        assertEq(token1.balanceOf(user1), 500 * DECIMALS);
         assertEq(distributor.hasClaimed(address(token1), user1), true);
     }
 
     function testWithdrawUnusedRewards() public {
         // First, deposit some rewards
-        uint256 depositAmount = 1000;
+        uint256 depositAmount = 1000 * DECIMALS;
         token1.approve(address(distributor), depositAmount);
 
         address[] memory tokens = new address[](1);
@@ -131,12 +133,12 @@ contract RewardDistributorTest is Test {
         // Now withdraw should succeed
         distributor.withdrawUnusedRewards(tokens);
 
-        assertEq(token1.balanceOf(address(this)), 998); // Initial balance minus 0.2% fee
+        assertEq(token1.balanceOf(address(this)), 998 * DECIMALS); // Initial balance minus 0.2% fee
     }
 
     function testCannotClaimTwice() public {
         // Deposit rewards
-        uint256 depositAmount = 1000;
+        uint256 depositAmount = 1000 * DECIMALS;
         token1.approve(address(distributor), depositAmount);
         address[] memory tokens = new address[](1);
         tokens[0] = address(token1);
@@ -178,7 +180,7 @@ contract RewardDistributorTest is Test {
 
     function testCannotWithdrawAfterClaim() public {
         // Deposit rewards
-        uint256 depositAmount = 1000;
+        uint256 depositAmount = 1000 * DECIMALS;
         token1.approve(address(distributor), depositAmount);
         address[] memory tokens = new address[](1);
         tokens[0] = address(token1);
