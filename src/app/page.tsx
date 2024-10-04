@@ -42,11 +42,8 @@ export default function Page() {
                 initialProgress={null} // You might want to fetch this data
               />
             ) : (
-              <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-                <WalletWrapper
-                  className="w-full max-w-md mx-auto"
-                  text="Masuk untuk mulai belajar"
-                />
+              <div className="bg-white p-6 rounded-lg shadow-lg flex items-center justify-center min-h-[300px]">
+                <WalletWrapper className="w-full max-w-md" text="Masuk untuk mulai belajar" />
               </div>
             )}
           </div>
