@@ -20,20 +20,18 @@ const Leaderboard: React.FC = () => {
         const q = query(usersRef, orderBy("tokenRewards", "desc"), limit(10));
         const querySnapshot = await getDocs(q);
 
-        const leaderboardData: LeaderboardEntry[] = querySnapshot.docs.map(
-          (doc) => {
-            const data = doc.data();
-            const totalPoints = data.tokenRewards.reduce(
-              (sum: number, reward: { points: number }) => sum + reward.points,
-              0
-            );
-            return {
-              address: doc.id,
-              level: Math.floor(totalPoints / 50) + 1,
-              points: totalPoints,
-            };
-          }
-        );
+        const leaderboardData: LeaderboardEntry[] = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          const totalPoints = data.tokenRewards.reduce(
+            (sum: number, reward: { points: number }) => sum + reward.points,
+            0,
+          );
+          return {
+            address: doc.id,
+            level: Math.floor(totalPoints / 50) + 1,
+            points: totalPoints,
+          };
+        });
 
         setLeaderboard(leaderboardData);
       } catch (error) {
@@ -62,17 +60,17 @@ const Leaderboard: React.FC = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-br from-purple-600 to-indigo-600 p-6 rounded-lg shadow-lg text-white"
+      className="bg-gradient-to-br from-purple-600 to-indigo-600 p-4 sm:p-6 rounded-lg shadow-lg text-white"
     >
-      <h2 className="text-2xl font-bold mb-4 text-center">🏆 Leaderboard 🏆</h2>
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">🏆 Leaderboard 🏆</h2>
       <div className="overflow-x-auto rounded-lg">
-        <table className="w-full">
+        <table className="w-full table-fixed">
           <thead>
             <tr className="bg-purple-700">
-              <th className="py-2 px-3 text-left">Rank</th>
-              <th className="py-2 px-3 text-left">Address</th>
-              <th className="py-2 px-3 text-center">Level</th>
-              <th className="py-2 px-3 text-right">$ICR</th>
+              <th className="py-2 px-2 sm:px-3 text-left w-1/6">Rank</th>
+              <th className="py-2 px-2 sm:px-3 text-left w-2/5">Address</th>
+              <th className="py-2 px-2 sm:px-3 text-center w-1/6">Level</th>
+              <th className="py-2 px-2 sm:px-3 text-right w-1/4">$ICR</th>
             </tr>
           </thead>
           <tbody>
@@ -90,14 +88,14 @@ const Leaderboard: React.FC = () => {
                   onMouseEnter={() => setHighlightedRank(index + 1)}
                   onMouseLeave={() => setHighlightedRank(null)}
                 >
-                  <td className="py-2 px-3">
-                    <span className="mr-2">{getEmojiForRank(index + 1)}</span>
+                  <td className="py-2 px-2 sm:px-3 text-sm sm:text-base">
+                    <span className="mr-1 sm:mr-2">{getEmojiForRank(index + 1)}</span>
                     {index + 1}
                   </td>
-                  <td className="py-2 px-3">
+                  <td className="py-2 px-2 sm:px-3 text-sm sm:text-base truncate">
                     {entry.address.slice(0, 6)}...{entry.address.slice(-4)}
                   </td>
-                  <td className="py-2 px-3 text-center">
+                  <td className="py-2 px-2 sm:px-3 text-center text-sm sm:text-base">
                     <motion.span
                       initial={{ scale: 1 }}
                       animate={{ scale: [1, 1.2, 1] }}
@@ -106,7 +104,7 @@ const Leaderboard: React.FC = () => {
                       {entry.level}
                     </motion.span>
                   </td>
-                  <td className="py-2 px-3 text-right whitespace-nowrap">
+                  <td className="py-2 px-2 sm:px-3 text-right text-sm sm:text-base">
                     <motion.span
                       initial={{ scale: 1 }}
                       animate={{ scale: [1, 1.2, 1] }}

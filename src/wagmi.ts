@@ -1,6 +1,13 @@
 "use client";
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
-import { coinbaseWallet, metaMaskWallet, rainbowWallet } from "@rainbow-me/rainbowkit/wallets";
+import {
+  coinbaseWallet,
+  metaMaskWallet,
+  rabbyWallet,
+  trustWallet,
+  safepalWallet,
+  safeWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 import { useMemo } from "react";
 import { http, createConfig } from "wagmi";
 import { base, baseSepolia } from "wagmi/chains";
@@ -23,7 +30,7 @@ export function useWagmiConfig() {
         },
         {
           groupName: "Other Wallets",
-          wallets: [rainbowWallet, metaMaskWallet],
+          wallets: [metaMaskWallet, rabbyWallet, trustWallet, safepalWallet, safeWallet],
         },
       ],
       {

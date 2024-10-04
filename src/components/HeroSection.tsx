@@ -1,11 +1,22 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { useConnect } from "wagmi";
+import { useAccount } from "wagmi";
 
 const HeroSection: React.FC = () => {
-  const scrollToQuests = () => {
-    const questSection = document.getElementById("quest-section");
-    if (questSection) {
-      questSection.scrollIntoView({ behavior: "smooth" });
+  const { connect, connectors } = useConnect();
+  const { isConnected } = useAccount();
+
+  const handleClick = () => {
+    if (!isConnected) {
+      // Connect to the first available connector (usually Coinbase Wallet)
+      connect({ connector: connectors[0] });
+    } else {
+      // If already connected, scroll to the quest section
+      const questSection = document.getElementById("quest-section");
+      if (questSection) {
+        questSection.scrollIntoView({ behavior: "smooth" });
+      }
     }
   };
 
@@ -17,19 +28,15 @@ const HeroSection: React.FC = () => {
       className="flex flex-col md:flex-row items-center justify-between py-12 px-4 sm:px-6 lg:px-8 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white overflow-hidden"
     >
       <div className="md:w-1/2 text-center md:text-left mb-8 md:mb-0">
-        <h1 className="text-3xl sm:text-4xl font-bold mb-4">
-          Selamat Datang di iCrypto Academy!
-        </h1>
-        <p className="text-xl sm:text-2xl mb-8">
-          Belajar, Upgrade Skill, Dapatkan Rewards!
-        </p>
+        <h1 className="text-3xl sm:text-4xl font-bold mb-4">Selamat Datang di iCrypto Academy!</h1>
+        <p className="text-xl sm:text-2xl mb-8">Belajar, Upgrade Skill, Dapatkan Rewards!</p>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="bg-yellow-400 text-purple-900 font-bold py-3 px-6 rounded-full text-lg shadow-lg hover:bg-yellow-300 transition duration-300"
-          onClick={scrollToQuests}
+          onClick={handleClick}
         >
-          Mulai Quest!
+          {isConnected ? "Mulai Quest!" : "Mulai Quest Dengan Base Smart Wallet!"}
         </motion.button>
       </div>
       <div className="md:w-1/2 flex justify-center items-center">
@@ -75,14 +82,7 @@ const HeroSection: React.FC = () => {
             }}
           >
             <circle cx="30" cy="30" r="25" fill="#FFD700" />
-            <text
-              x="30"
-              y="38"
-              fontSize="24"
-              fontWeight="bold"
-              fill="#333"
-              textAnchor="middle"
-            >
+            <text x="30" y="38" fontSize="24" fontWeight="bold" fill="#333" textAnchor="middle">
               $
             </text>
           </motion.svg>
