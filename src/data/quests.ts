@@ -63,8 +63,7 @@ export const quests: Quest[] = [
   {
     id: "subscribe-youtube",
     title: "Subscribe to iCrypto Media on YouTube",
-    description:
-      "Subscribe to our YouTube channel for in-depth crypto analysis.",
+    description: "Subscribe to our YouTube channel for in-depth crypto analysis.",
     tokenRewards: [{ tokenId: 1, points: 5 }],
     isPrerequisite: true,
     socialChannel: socialChannels[2],
@@ -74,8 +73,7 @@ export const quests: Quest[] = [
   {
     id: "xrp-prediction",
     title: "Quest 1: Baca Prediksi Harga XRP",
-    description:
-      "Baca artikel tentang prediksi harga XRP dan berikan pendapatmu.",
+    description: "Baca artikel tentang prediksi harga XRP dan berikan pendapatmu.",
     articleUrl: "https://icrypto.co.id/xrp-prediksi-ledakan-harga-2024/",
     tokenRewards: [{ tokenId: 1, points: 10 }],
     type: "article",
@@ -86,7 +84,7 @@ export const quests: Quest[] = [
     title: "Quest 2: Baca Coinbase vs SEC",
     description: "Baca artikel tentang Coinbase vs SEC dan berikan pendapatmu.",
     articleUrl: "https://icrypto.co.id/coinbase-vs-sec-regulasi-kripto/",
-    tokenRewards: [{ tokenId: 1, points: 25 }],
+    tokenRewards: [{ tokenId: 1, points: 10 }],
     type: "article",
     requiresFeedback: true,
   },
