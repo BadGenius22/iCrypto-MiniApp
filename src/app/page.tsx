@@ -32,9 +32,9 @@ export default function Page() {
           </div>
         </div>
       </header>
-      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <HeroSection />
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
             {address ? (
               <TaskSection
@@ -42,7 +42,7 @@ export default function Page() {
                 initialProgress={null} // You might want to fetch this data
               />
             ) : (
-              <div className="bg-white p-6 rounded-lg shadow-lg flex items-center justify-center min-h-[300px]">
+              <div className="bg-white p-4 rounded-lg shadow-lg flex items-center justify-center h-[80px]">
                 <WalletWrapper className="w-full max-w-md" text="Masuk untuk mulai belajar" />
               </div>
             )}
