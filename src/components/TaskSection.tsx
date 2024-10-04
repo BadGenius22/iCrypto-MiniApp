@@ -17,10 +17,7 @@ interface TaskSectionProps {
   address: `0x${string}`;
 }
 
-const TaskSection: React.FC<TaskSectionProps> = ({
-  initialProgress,
-  address,
-}) => {
+const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) => {
   const [takeaways, setTakeaways] = useState("");
   const [feedback, setFeedback] = useState("");
   const [points, setPoints] = useState(0);
@@ -51,17 +48,12 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     if (address) {
       const progress = await getUserProgress(address);
       if (progress) {
-        const totalPoints = progress.tokenRewards.reduce(
-          (sum, reward) => sum + reward.points,
-          0
-        );
+        const totalPoints = progress.tokenRewards.reduce((sum, reward) => sum + reward.points, 0);
         setPoints(totalPoints);
         setLevel(Math.floor(totalPoints / 50) + 1);
         setProgress((totalPoints % 50) * 2);
         setCompletedQuests(progress.completedQuests);
-        setCurrentQuestIndex(
-          getNextIncompleteQuestIndex(progress.completedQuests)
-        );
+        setCurrentQuestIndex(getNextIncompleteQuestIndex(progress.completedQuests));
         setHasClaimedRewards(progress.hasClaimedRewards || false);
         setTokenRewards(progress.tokenRewards);
       }
@@ -69,7 +61,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   };
 
   const getNextIncompleteQuestIndex = (completedQuestIds: string[]) => {
-    return quests.findIndex((quest) => !completedQuestIds.includes(quest.id));
+    return quests.findIndex(quest => !completedQuestIds.includes(quest.id));
   };
 
   const handleSocialFollow = (quest: Quest) => {
@@ -96,10 +88,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     if (!address) return;
 
     const newTokenRewards = [...tokenRewards, ...quest.tokenRewards];
-    const newTotalPoints = newTokenRewards.reduce(
-      (sum, reward) => sum + reward.points,
-      0
-    );
+    const newTotalPoints = newTokenRewards.reduce((sum, reward) => sum + reward.points, 0);
     const newCompletedQuests = [...completedQuests, quest.id];
     const newLevel = Math.floor(newTotalPoints / 50) + 1;
 
@@ -149,30 +138,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
     return takeawaysWordCount >= 5 && feedbackWordCount >= 5;
   };
 
-  const isQuestCompleted = (questId: string) =>
-    completedQuests.includes(questId);
-
-  const resetSubmission = async () => {
-    if (!address) return;
-
-    const resetProgress: UserProgress = {
-      address,
-      level: 1,
-      completedQuests: [],
-      tokenRewards: [],
-      submissions: {},
-      hasClaimedRewards: false,
-    };
-    await saveUserProgress(resetProgress);
-    setPoints(0);
-    setLevel(1);
-    setProgress(0);
-    setCompletedQuests([]);
-    setCurrentQuestIndex(0);
-    setTakeaways("");
-    setFeedback("");
-    setTokenRewards([]);
-  };
+  const isQuestCompleted = (questId: string) => completedQuests.includes(questId);
 
   const handleClaim = () => {
     if (hasClaimedRewards) {
@@ -248,9 +214,9 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   const filterQuests = (questList: Quest[]) => {
     switch (activeTab) {
       case "prerequisite":
-        return questList.filter((quest) => quest.isPrerequisite);
+        return questList.filter(quest => quest.isPrerequisite);
       case "article":
-        return questList.filter((quest) => !quest.isPrerequisite);
+        return questList.filter(quest => !quest.isPrerequisite);
       default:
         return questList;
     }
@@ -268,8 +234,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
   const renderQuestCard = (quest: Quest) => {
     const isCompleted = isQuestCompleted(quest.id);
     const isFormValid = quest.requiresFeedback
-      ? takeaways.trim().split(/\s+/).length >= 5 &&
-        feedback.trim().split(/\s+/).length >= 5
+      ? takeaways.trim().split(/\s+/).length >= 5 && feedback.trim().split(/\s+/).length >= 5
       : true;
 
     return (
@@ -294,9 +259,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
             }`}
             disabled={isCompleted}
           >
-            {isCompleted
-              ? "Completed!"
-              : `Follow on ${quest.socialChannel.name}`}
+            {isCompleted ? "Completed!" : `Follow on ${quest.socialChannel.name}`}
           </button>
         ) : quest.type === "article" ? (
           <>
@@ -313,10 +276,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
               {isCompleted ? "Completed!" : "Read Article"}
             </a>
             {!isCompleted && quest.requiresFeedback && (
-              <form
-                onSubmit={(e) => handleSubmit(e, quest)}
-                className="mt-4 space-y-4"
-              >
+              <form onSubmit={e => handleSubmit(e, quest)} className="mt-4 space-y-4">
                 <div>
                   <label
                     htmlFor={`takeaways-${quest.id}`}
@@ -327,7 +287,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
                   <textarea
                     id={`takeaways-${quest.id}`}
                     value={takeaways}
-                    onChange={(e) => setTakeaways(e.target.value)}
+                    onChange={e => setTakeaways(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={3}
                   />
@@ -342,7 +302,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
                   <textarea
                     id={`feedback-${quest.id}`}
                     value={feedback}
-                    onChange={(e) => setFeedback(e.target.value)}
+                    onChange={e => setFeedback(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={3}
                   />
@@ -366,18 +326,9 @@ const TaskSection: React.FC<TaskSectionProps> = ({
           <div>Custom quest content</div>
         )}
         {isCompleted && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="mt-4 text-center"
-          >
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mt-4 text-center">
             <span className="inline-block bg-yellow-400 text-purple-900 px-4 py-2 rounded-full font-bold">
-              +
-              {quest.tokenRewards.reduce(
-                (sum, reward) => sum + reward.points,
-                0
-              )}{" "}
-              $ICR
+              +{quest.tokenRewards.reduce((sum, reward) => sum + reward.points, 0)} $ICR
             </span>
           </motion.div>
         )}
@@ -394,11 +345,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({
         className="bg-gradient-to-r from-purple-600 to-indigo-600 p-8 rounded-lg shadow-lg text-white relative overflow-hidden"
       >
         <div className="absolute top-0 left-0 w-full h-full bg-white opacity-5">
-          <svg
-            className="w-full h-full"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 100 100"
-          >
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
             <path
               d="M0 0 L100 0 L100 100 L0 100 Z"
               fill="none"
@@ -443,19 +390,11 @@ const TaskSection: React.FC<TaskSectionProps> = ({
               {level}
             </motion.div>
           </motion.div>
-          <button
-            onClick={resetSubmission}
-            className="mt-6 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-red-600 transition duration-300"
-          >
-            Reset Progress (Testing)
-          </button>
         </div>
       </motion.div>
 
       <div className="bg-white p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold text-center mb-6">
-          Available Quests
-        </h2>
+        <h2 className="text-2xl font-bold text-center mb-6">Available Quests</h2>
         <div className="flex justify-center mb-4">
           <button
             className={`px-4 py-2 rounded-l-lg ${activeTab === "all" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
