@@ -7,6 +7,7 @@ import {
   INSTAGRAM_LINK,
   TIKTOK_LINK,
   YOUTUBE_LINK,
+  SPOTIFY_LINK,
 } from "src/links";
 import ArrowSvg from "src/svg/ArrowSvg";
 
@@ -17,6 +18,7 @@ const docLinks = [
   { href: TWITTER_LINK, title: "X" },
   { href: DISCORD_LINK, title: "Discord" },
   { href: YOUTUBE_LINK, title: "Youtube" },
+  { href: SPOTIFY_LINK, title: "Spotify" },
 ];
 
 export default function Footer() {
