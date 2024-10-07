@@ -37,6 +37,11 @@ export const socialChannels: SocialChannel[] = [
     name: "YouTube",
     url: "https://www.youtube.com/icryptomedia",
   },
+  {
+    id: "spotify",
+    name: "Spotify",
+    url: "https://open.spotify.com/show/76riuIIyeR0DdKQgBxOmO3",
+  },
 ];
 
 export const quests: Quest[] = [
@@ -67,6 +72,16 @@ export const quests: Quest[] = [
     tokenRewards: [{ tokenId: 1, points: 5 }],
     isPrerequisite: true,
     socialChannel: socialChannels[2],
+    type: "social",
+    requiresFeedback: false,
+  },
+  {
+    id: "spotify",
+    title: "Listen to Podcast iCrypto Media on Spotify",
+    description: "Listen to our Spotify show for crypto insights.",
+    tokenRewards: [{ tokenId: 1, points: 5 }],
+    isPrerequisite: true,
+    socialChannel: socialChannels[3],
     type: "social",
     requiresFeedback: false,
   },
