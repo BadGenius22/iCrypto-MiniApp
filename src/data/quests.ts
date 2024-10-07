@@ -71,11 +71,11 @@ export const quests: Quest[] = [
     requiresFeedback: false,
   },
   {
-    id: "xrp-prediction",
+    id: "coinbase-wallet",
     title: "Quest 1: Baca belajar web3 dan coinbase wallet",
     description: "Baca artikel tentang belajar web3 dan coinbase wallet",
     articleUrl:
-      ":https://icrypto.co.id/icrypto-media-academy-mini-app-belajar-web3-dan-coinbase-wallet/",
+      "https://icrypto.co.id/icrypto-media-academy-mini-app-belajar-web3-dan-coinbase-wallet/",
     tokenRewards: [{ tokenId: 1, points: 20 }],
     type: "article",
     requiresFeedback: true,
