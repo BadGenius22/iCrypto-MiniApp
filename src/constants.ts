@@ -9,8 +9,13 @@ export const claimRewardsABI: Abi = [
       {
         components: [
           {
+            internalType: "uint256[]",
+            name: "seasonId",
+            type: "uint256[]",
+          },
+          {
             internalType: "address[]",
-            name: "tokens",
+            name: "token",
             type: "address[]",
           },
           {
@@ -20,13 +25,13 @@ export const claimRewardsABI: Abi = [
           },
           {
             internalType: "bytes32[][]",
-            name: "merkleProofs",
+            name: "merkleProof",
             type: "bytes32[][]",
           },
         ],
-        internalType: "struct RewardDistributor.ClaimData",
+        internalType: "struct RewardDistributor.ClaimData[]",
         name: "claimData",
-        type: "tuple",
+        type: "tuple[]",
       },
     ],
     name: "claimRewards",

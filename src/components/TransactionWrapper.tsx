@@ -13,7 +13,16 @@ import { motion } from "framer-motion";
 import confetti from "canvas-confetti";
 import merkleTreeData from "../data/merkle-tree-data.production.json";
 
+// Update this interface to match the contract's ClaimData struct
+interface ClaimData {
+  seasonId: number[];
+  token: string[];
+  points: number[];
+  merkleProof: string[][];
+}
+
 interface MerkleProofData {
+  seasonId: number;
   tokens: string[];
   points: number[];
   proofs: string[][];
@@ -35,6 +44,7 @@ const fetchMerkleProof = async (address: string): Promise<MerkleProofData> => {
   const proofData = (merkleTreeData.userProofs as Record<string, any>)[address];
   if (proofData) {
     return {
+      seasonId: proofData.seasonId,
       tokens: proofData.tokens,
       points: proofData.points,
       proofs: proofData.proofs,
@@ -73,24 +83,28 @@ export default function TransactionWrapper({
     loadMerkleProofs();
   }, [address]);
 
-  const claimData = merkleProofData
-    ? {
-        tokens: merkleProofData.tokens,
-        points: merkleProofData.points,
-        merkleProofs: merkleProofData.proofs,
-      }
-    : null;
-
-  const contracts = claimData
-    ? ([
+  const claimData: ClaimData[] = merkleProofData
+    ? [
         {
-          address: contractAddress,
-          abi: claimRewardsABI,
-          functionName: "claimRewards",
-          args: [claimData],
+          seasonId: [merkleProofData.seasonId],
+          token: merkleProofData.tokens,
+          points: merkleProofData.points,
+          merkleProof: merkleProofData.proofs,
         },
-      ] as unknown as ContractFunctionParameters[])
+      ]
     : [];
+
+  const contracts =
+    claimData.length > 0
+      ? ([
+          {
+            address: contractAddress,
+            abi: claimRewardsABI,
+            functionName: "claimRewards",
+            args: [claimData],
+          },
+        ] as unknown as ContractFunctionParameters[])
+      : [];
 
   const handleSuccess = async (response: TransactionResponse) => {
     console.log("Transaction successful", response);
