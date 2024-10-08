@@ -10,7 +10,8 @@ export interface TokenReward {
 }
 
 export interface Quest {
-  id: string;
+  id: number;
+  seasonId: number; // Add this field
   title: string;
   description: string;
   articleUrl?: string;
@@ -46,7 +47,8 @@ export const socialChannels: SocialChannel[] = [
 
 export const quests: Quest[] = [
   {
-    id: "follow-instagram",
+    id: 1,
+    seasonId: 1, // Add this field to each quest
     title: "Follow iCrypto Media on Instagram",
     description: "Follow our Instagram channel for the latest updates.",
     tokenRewards: [{ tokenId: 1, points: 5 }],
@@ -56,7 +58,8 @@ export const quests: Quest[] = [
     requiresFeedback: false,
   },
   {
-    id: "follow-tiktok",
+    id: 2,
+    seasonId: 1, // Add this field to each quest
     title: "Follow iCrypto Media on TikTok",
     description: "Join us on TikTok for short, informative crypto content.",
     tokenRewards: [{ tokenId: 1, points: 5 }],
@@ -66,7 +69,8 @@ export const quests: Quest[] = [
     requiresFeedback: false,
   },
   {
-    id: "subscribe-youtube",
+    id: 3,
+    seasonId: 1, // Add this field to each quest
     title: "Subscribe to iCrypto Media on YouTube",
     description: "Subscribe to our YouTube channel for in-depth crypto analysis.",
     tokenRewards: [{ tokenId: 1, points: 5 }],
@@ -76,7 +80,8 @@ export const quests: Quest[] = [
     requiresFeedback: false,
   },
   {
-    id: "spotify",
+    id: 4,
+    seasonId: 1, // Add this field to each quest
     title: "Listen to Podcast iCrypto Media on Spotify",
     description: "Listen to our Spotify show for crypto insights.",
     tokenRewards: [{ tokenId: 1, points: 5 }],
@@ -86,7 +91,8 @@ export const quests: Quest[] = [
     requiresFeedback: false,
   },
   {
-    id: "coinbase-wallet",
+    id: 5,
+    seasonId: 1, // Add this field to each quest
     title: "Quest 1: Baca belajar web3 dan coinbase wallet",
     description: "Baca artikel tentang belajar web3 dan coinbase wallet",
     articleUrl:
@@ -96,4 +102,10 @@ export const quests: Quest[] = [
     requiresFeedback: true,
   },
   // Add more quests here in the future
+];
+
+export const seasons = [
+  { id: 1, name: "Season 1", startDate: "2024-10-01", endDate: "2024-10-31" },
+  { id: 2, name: "Season 2", startDate: "2024-11-01", endDate: "2024-11-30" },
+  // ... add more seasons as needed
 ];
