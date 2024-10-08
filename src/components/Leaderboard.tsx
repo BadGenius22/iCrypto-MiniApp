@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs, query, limit } from "firebase/firestore";
 import { db } from "../config/firebase"; // Make sure this path is correct
 
 interface LeaderboardEntry {
@@ -17,7 +17,7 @@ const Leaderboard: React.FC = () => {
     const fetchLeaderboard = async () => {
       try {
         const usersRef = collection(db, "users");
-        const q = query(usersRef, orderBy("tokenRewards", "desc"), limit(10));
+        const q = query(usersRef, limit(50)); // Fetch more users, we'll sort client-side
         const querySnapshot = await getDocs(q);
 
         const leaderboardData: LeaderboardEntry[] = querySnapshot.docs.map(doc => {
@@ -33,7 +33,11 @@ const Leaderboard: React.FC = () => {
           };
         });
 
-        setLeaderboard(leaderboardData);
+        // Sort the leaderboard data by points in descending order
+        leaderboardData.sort((a, b) => b.points - a.points);
+
+        // Take only the top 10 after sorting
+        setLeaderboard(leaderboardData.slice(0, 10));
       } catch (error) {
         console.error("Error fetching leaderboard data:", error);
       }
