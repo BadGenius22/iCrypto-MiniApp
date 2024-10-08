@@ -1,11 +1,11 @@
 import { task } from "hardhat/config";
 import chalk from "chalk";
 import { TASK_COMPILE } from "hardhat/builtin-tasks/task-names";
-import { RewardDistributor__factory } from "../../typechain-types";
+import { RewardDistributor__factory, RewardDistController__factory } from "../../typechain-types";
 
 task(
   "deploy-reward-distributor-implementation",
-  "Deploy RewardDistributor implementation",
+  "Deploy RewardDistributor and Controller implementations",
 ).setAction(async (_, { ethers, network, run }) => {
   const [deployer] = await ethers.getSigners();
   if (!deployer) {
@@ -16,7 +16,7 @@ task(
 
   console.log(
     chalk.blue(
-      "Deploying RewardDistributor implementation with the account:",
+      "Deploying RewardDistributor and Controller implementations with the account:",
       chalk.green(deployer.address),
     ),
   );
@@ -35,22 +35,42 @@ task(
     ),
   );
 
-  // Verify contract
+  // Deploy Controller implementation
+  const ControllerFactory = (await ethers.getContractFactory(
+    "RewardDistController",
+  )) as RewardDistController__factory;
+  const controllerImpl = await ControllerFactory.deploy();
+  await controllerImpl.waitForDeployment();
+
+  console.log(
+    chalk.blue(
+      "Controller implementation deployed to:",
+      chalk.green(await controllerImpl.getAddress()),
+    ),
+  );
+
+  // Verify contracts
   if (network.name === "baseSepolia" || network.name === "base") {
-    console.log(chalk.yellow("Verifying contract..."));
+    console.log(chalk.yellow("Verifying contracts..."));
 
     await run("verify:verify", {
       address: await distributorImpl.getAddress(),
       constructorArguments: [],
     });
 
-    console.log(chalk.green("Contract verified successfully."));
+    await run("verify:verify", {
+      address: await controllerImpl.getAddress(),
+      constructorArguments: [],
+    });
+
+    console.log(chalk.green("Contracts verified successfully."));
   }
 
   console.log(chalk.blue("Deployment and verification completed"));
 
   return {
     rewardDistributorImpl: await distributorImpl.getAddress(),
+    controllerImpl: await controllerImpl.getAddress(),
   };
 });
 
