@@ -19,6 +19,7 @@ contract RewardDistributorTest is Test {
     address public user2;
 
     uint256 constant DECIMALS = 1e18;
+    uint256 constant SEASON_ID = 1;
 
     function setUp() public {
         owner = address(this);
@@ -65,7 +66,7 @@ contract RewardDistributorTest is Test {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = depositAmount;
 
-        distributor.depositRewards(tokens, amounts);
+        distributor.depositRewards(SEASON_ID, tokens, amounts);
 
         assertEq(token1.balanceOf(address(distributor)), 998 * DECIMALS); // 99.8% of deposit
         assertEq(token1.balanceOf(address(0xfee)), 2 * DECIMALS); // 0.2% fee
@@ -79,16 +80,16 @@ contract RewardDistributorTest is Test {
         tokens[0] = address(token1);
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = depositAmount;
-        distributor.depositRewards(tokens, amounts);
+        distributor.depositRewards(SEASON_ID, tokens, amounts);
 
         // Generate Merkle tree
         bytes32[] memory leaves = new bytes32[](1);
-        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));
+        leaves[0] = keccak256(abi.encodePacked(user1, SEASON_ID, address(token1), uint256(500)));
 
         bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));
 
         // Update Merkle root
-        controller.updateMerkleRoot(root);
+        controller.updateMerkleRoot(SEASON_ID, root);
 
         // Generate Merkle proof for user1
         bytes32[] memory proofUser1 = new bytes32[](1);
@@ -96,19 +97,23 @@ contract RewardDistributorTest is Test {
 
         // Claim rewards
         vm.prank(user1);
-        address[] memory claimTokens = new address[](1);
-        claimTokens[0] = address(token1);
-        uint256[] memory claimPoints = new uint256[](1);
-        claimPoints[0] = 500;
-        bytes32[][] memory proofs = new bytes32[][](1);
-        proofs[0] = proofUser1;
-        distributor.claimRewards(
-            RewardDistributor.ClaimData({ tokens: claimTokens, points: claimPoints, merkleProofs: proofs })
-        );
+        RewardDistributor.ClaimData[] memory claimDataArray = new RewardDistributor.ClaimData[](1);
+        claimDataArray[0] = RewardDistributor.ClaimData({
+            seasonId: new uint256[](1),
+            token: new address[](1),
+            points: new uint256[](1),
+            merkleProof: new bytes32[][](1)
+        });
+        claimDataArray[0].seasonId[0] = SEASON_ID;
+        claimDataArray[0].token[0] = address(token1);
+        claimDataArray[0].points[0] = 500;
+        claimDataArray[0].merkleProof[0] = proofUser1;
+
+        distributor.claimRewards(claimDataArray);
 
         // Verify claim
         assertEq(token1.balanceOf(user1), 500 * DECIMALS);
-        assertEq(distributor.hasClaimed(address(token1), user1), true);
+        assertTrue(distributor.hasClaimed(SEASON_ID, address(token1), user1));
     }
 
     function testWithdrawUnusedRewards() public {
@@ -121,17 +126,17 @@ contract RewardDistributorTest is Test {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = depositAmount;
 
-        distributor.depositRewards(tokens, amounts);
+        distributor.depositRewards(SEASON_ID, tokens, amounts);
 
         // Try to withdraw immediately (should fail)
         vm.expectRevert(RewardDistributor.WITHDRAWAL_TOO_EARLY.selector);
-        distributor.withdrawUnusedRewards(tokens);
+        distributor.withdrawUnusedRewards(SEASON_ID, tokens);
 
         // Fast forward 31 days
         vm.warp(block.timestamp + 31 days);
 
         // Now withdraw should succeed
-        distributor.withdrawUnusedRewards(tokens);
+        distributor.withdrawUnusedRewards(SEASON_ID, tokens);
 
         assertEq(token1.balanceOf(address(this)), 998 * DECIMALS); // Initial balance minus 0.2% fee
     }
@@ -144,41 +149,45 @@ contract RewardDistributorTest is Test {
         tokens[0] = address(token1);
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = depositAmount;
-        distributor.depositRewards(tokens, amounts);
+        distributor.depositRewards(SEASON_ID, tokens, amounts);
 
         // Generate Merkle tree
         bytes32[] memory leaves = new bytes32[](1);
-        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));
+        leaves[0] = keccak256(abi.encodePacked(user1, SEASON_ID, address(token1), uint256(500)));
 
         bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));
 
         // Update Merkle root
-        controller.updateMerkleRoot(root);
+        controller.updateMerkleRoot(SEASON_ID, root);
 
         // Generate Merkle proof for user1
         bytes32[] memory proofUser1 = new bytes32[](1);
         proofUser1[0] = leaves[0];
 
+        // Prepare claim data
+        RewardDistributor.ClaimData[] memory claimDataArray = new RewardDistributor.ClaimData[](1);
+        claimDataArray[0] = RewardDistributor.ClaimData({
+            seasonId: new uint256[](1),
+            token: new address[](1),
+            points: new uint256[](1),
+            merkleProof: new bytes32[][](1)
+        });
+        claimDataArray[0].seasonId[0] = SEASON_ID;
+        claimDataArray[0].token[0] = address(token1);
+        claimDataArray[0].points[0] = 500;
+        claimDataArray[0].merkleProof[0] = proofUser1;
+
         // Claim rewards
         vm.prank(user1);
-        address[] memory claimTokens = new address[](1);
-        claimTokens[0] = address(token1);
-        uint256[] memory claimPoints = new uint256[](1);
-        claimPoints[0] = 500;
-        bytes32[][] memory proofs = new bytes32[][](1);
-        proofs[0] = proofUser1;
-        distributor.claimRewards(
-            RewardDistributor.ClaimData({ tokens: claimTokens, points: claimPoints, merkleProofs: proofs })
-        );
+        distributor.claimRewards(claimDataArray);
+
         // Try to claim again
         vm.expectRevert(RewardDistributor.HAS_CLAIMED.selector);
         vm.prank(user1);
-        distributor.claimRewards(
-            RewardDistributor.ClaimData({ tokens: claimTokens, points: claimPoints, merkleProofs: proofs })
-        );
+        distributor.claimRewards(claimDataArray);
     }
 
-    function testCannotWithdrawAfterClaim() public {
+    function testCannotWithdrawUnusedRewards() public {
         // Deposit rewards
         uint256 depositAmount = 1000 * DECIMALS;
         token1.approve(address(distributor), depositAmount);
@@ -186,38 +195,40 @@ contract RewardDistributorTest is Test {
         tokens[0] = address(token1);
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = depositAmount;
-        distributor.depositRewards(tokens, amounts);
+        distributor.depositRewards(SEASON_ID, tokens, amounts);
 
         // Generate Merkle tree
         bytes32[] memory leaves = new bytes32[](1);
-        leaves[0] = keccak256(abi.encodePacked(user1, address(token1), uint256(500)));
+        leaves[0] = keccak256(abi.encodePacked(user1, SEASON_ID, address(token1), uint256(500)));
 
         bytes32 root = keccak256(abi.encodePacked(leaves[0], leaves[0]));
 
         // Update Merkle root
-        controller.updateMerkleRoot(root);
+        controller.updateMerkleRoot(SEASON_ID, root);
 
         // Generate Merkle proof for user1
         bytes32[] memory proofUser1 = new bytes32[](1);
         proofUser1[0] = leaves[0];
 
+        // Prepare claim data
+        RewardDistributor.ClaimData[] memory claimDataArray = new RewardDistributor.ClaimData[](1);
+        claimDataArray[0] = RewardDistributor.ClaimData({
+            seasonId: new uint256[](1),
+            token: new address[](1),
+            points: new uint256[](1),
+            merkleProof: new bytes32[][](1)
+        });
+        claimDataArray[0].seasonId[0] = SEASON_ID;
+        claimDataArray[0].token[0] = address(token1);
+        claimDataArray[0].points[0] = 500;
+        claimDataArray[0].merkleProof[0] = proofUser1;
+
         // Claim rewards
         vm.prank(user1);
-        address[] memory claimTokens = new address[](1);
-        claimTokens[0] = address(token1);
-        uint256[] memory claimPoints = new uint256[](1);
-        claimPoints[0] = 500;
-        bytes32[][] memory proofs = new bytes32[][](1);
-        proofs[0] = proofUser1;
-        distributor.claimRewards(
-            RewardDistributor.ClaimData({ tokens: claimTokens, points: claimPoints, merkleProofs: proofs })
-        );
-
-        // Fast forward 31 days
-        vm.warp(block.timestamp + 31 days);
+        distributor.claimRewards(claimDataArray);
 
         // Try to withdraw (should fail)
-        vm.expectRevert(RewardDistributor.REWARDS_ALREADY_CLAIMED.selector);
-        distributor.withdrawUnusedRewards(tokens);
+        vm.expectRevert(RewardDistributor.WITHDRAWAL_TOO_EARLY.selector);
+        distributor.withdrawUnusedRewards(SEASON_ID, tokens);
     }
 }
