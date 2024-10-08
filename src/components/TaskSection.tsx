@@ -11,7 +11,7 @@ import {
   TokenReward,
 } from "../lib/userProgress";
 import TransactionWrapper from "./TransactionWrapper";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 interface TaskSectionProps {
@@ -60,6 +60,10 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
 
     fetchClaimStatus();
   }, [address]);
+
+  useEffect(() => {
+    console.log("Firestore claim status:", firestoreClaimStatus);
+  }, [firestoreClaimStatus]);
 
   const loadUserProgress = async () => {
     if (address) {
@@ -183,7 +187,10 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
 
   const handleClaimSuccess = async (data: any) => {
     console.log("Claim success data:", data);
-    if (!address) return;
+    if (!address) {
+      console.error("No address available");
+      return;
+    }
 
     const hash = data.hash;
     console.log("Transaction hash:", hash);
@@ -191,49 +198,55 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
     if (hash) {
       setTransactionHash(hash);
 
-      const updatedProgress: UserProgress = {
-        address,
-        level,
-        completedQuests,
-        tokenRewards,
-        submissions: initialProgress?.submissions || {},
-        hasClaimedRewards: true,
-      };
-      await saveUserProgress(updatedProgress);
-      setHasClaimedRewards(true);
+      try {
+        // Update the user's progress in Firestore
+        const userDocRef = doc(db, "users", address);
+        await updateDoc(userDocRef, {
+          hasClaimedRewards: true,
+        });
+        console.log("Firestore updated successfully");
 
-      // Trigger confetti effect
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
-      });
+        // Update local state
+        setHasClaimedRewards(true);
+        setFirestoreClaimStatus(true);
 
-      setTimeout(() => {
+        // Trigger confetti effect
         confetti({
-          particleCount: 50,
-          angle: 60,
-          spread: 55,
-          origin: { x: 0 },
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
           colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
         });
-      }, 250);
 
-      setTimeout(() => {
-        confetti({
-          particleCount: 50,
-          angle: 120,
-          spread: 55,
-          origin: { x: 1 },
-          colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
-        });
-      }, 400);
+        setTimeout(() => {
+          confetti({
+            particleCount: 50,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
+          });
+        }, 250);
 
-      setIsClaimInitiated(false);
+        setTimeout(() => {
+          confetti({
+            particleCount: 50,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: ["#FFD700", "#FFA500", "#FF4500", "#8A2BE2", "#4B0082"],
+          });
+        }, 400);
+      } catch (error) {
+        console.error("Error updating Firestore:", error);
+        setClaimError("Failed to update claim status. Please contact support.");
+      } finally {
+        setIsClaimInitiated(false);
+      }
     } else {
       console.error("No transaction hash found in the response");
       setClaimError("Failed to get transaction hash. Please try again.");
+      setIsClaimInitiated(false);
     }
   };
 
