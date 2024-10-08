@@ -6,7 +6,7 @@ interface IRewardDistController {
 
     function getMinAmountForToken(address token) external view returns (uint256);
 
-    function getMerkleRoot() external view returns (bytes32);
+    function getMerkleRoot(uint256 seasonId) external view returns (bytes32);
 
     function version() external pure returns (string memory);
 

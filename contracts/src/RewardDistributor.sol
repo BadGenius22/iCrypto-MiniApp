@@ -20,9 +20,10 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
     using SafeERC20 for IERC20;
 
     struct ClaimData {
-        address[] tokens;
+        uint256[] seasonId;
+        address[] token;
         uint256[] points;
-        bytes32[][] merkleProofs;
+        bytes32[][] merkleProof;
     }
 
     // =============================================================
@@ -30,10 +31,10 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
     // =============================================================
     event RewardDeposited(
         address indexed depositor,
-        address indexed vault,
         address indexed tokens,
         uint256 amounts,
-        uint256 epoch
+        uint256 seasonId,
+        uint256 timestamp
     );
     event RewardClaimed(address indexed user, address indexed tokens, uint256 rewardAmounts);
     event UnusedRewardsWithdrawn(address indexed depositor, address indexed token, uint256 amount);
@@ -53,27 +54,27 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
     error NET_AMOUNT_BELOW_MIN(uint256 netBribeAmount);
     error ZERO_CONTRIBUTION();
     error INSUFFICIENT_REWARDS();
-    error REWARDS_ALREADY_CLAIMED();
     error WITHDRAWAL_TOO_EARLY();
+    error ZERO_POINTS(); // Add this new error
 
     // =============================================================
     //                   Mappings
     // =============================================================
 
-    /// @notice Track the amount deposited by each user (address) for each token
-    mapping(address => mapping(address => uint256)) public contributions;
+    /// @notice Track the amount deposited by each user (address) for each token in each season
+    mapping(uint256 => mapping(address => mapping(address => uint256))) public contributions;
 
-    /// @notice Records whether a claim has been made for a specific combination of user and token.
-    mapping(address => mapping(address => bool)) public hasClaimed;
+    /// @notice Track the amount claimed by each user (address) for each token in each season
+    mapping(uint256 => mapping(address => mapping(address => bool))) public hasClaimed;
 
-    /// @notice Tracks the total rewards deposited for each token.
-    mapping(address => uint256) public totalDepositedRewards;
+    /// @notice Tracks the total rewards deposited for each token in each season.
+    mapping(uint256 => mapping(address => uint256)) public totalDepositedRewards;
 
-    /// @notice Records the total rewards claimed for each token.
-    mapping(address => uint256) public totalClaimedRewards;
+    /// @notice Records the total rewards claimed for each token in each season.
+    mapping(uint256 => mapping(address => uint256)) public totalClaimedRewards;
 
-    /// @notice Tracks the timestamp of the last deposit for each depositor and token.
-    mapping(address => mapping(address => uint256)) public lastDepositTimestamp;
+    /// @notice Tracks the timestamp of the last deposit for each depositor and token in each season.
+    mapping(uint256 => mapping(address => mapping(address => uint256))) public lastDepositTimestamp;
 
     // =============================================================
     //                   State Variables
@@ -100,11 +101,11 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
     /* ========== VIEWS ========== */
 
     /**
-     * @notice Calculate unclaimed rewards for a given token.
+     * @notice Calculate unclaimed rewards for a given token in a specific season.
      */
-    function getUnclaimedRewards(address token) public view returns (uint256) {
-        uint256 deposited = totalDepositedRewards[token];
-        uint256 claimed = totalClaimedRewards[token];
+    function getUnclaimedRewards(uint256 seasonId, address token) public view returns (uint256) {
+        uint256 deposited = totalDepositedRewards[seasonId][token];
+        uint256 claimed = totalClaimedRewards[seasonId][token];
         return deposited > claimed ? deposited - claimed : 0;
     }
 
@@ -122,7 +123,11 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
      * @custom:reverts BELOW_MINAMOUNT if any net reward amount is below the minimum required amount for the token.
      * @custom:reverts NET_AMOUNT_BELOW_MIN if the net amount (after fee deduction) is below the minimum amount for the token.
      */
-    function depositRewards(address[] calldata tokens, uint256[] calldata amounts) external payable nonReentrant {
+    function depositRewards(
+        uint256 seasonId,
+        address[] calldata tokens,
+        uint256[] calldata amounts
+    ) external payable nonReentrant {
         if (tokens.length != amounts.length) revert INVALID_INPUT_LENGTH();
 
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -146,67 +151,92 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
             // Transfer netRewardAmount from sender to this contract as reward
             IERC20(tokens[i]).safeTransferFrom(msg.sender, address(this), netRewardAmount);
 
-            // Update total deposited rewards
-            totalDepositedRewards[tokens[i]] += netRewardAmount;
+            // Update total deposited rewards for this season
+            totalDepositedRewards[seasonId][tokens[i]] += netRewardAmount;
 
-            // Update contributions
-            contributions[tokens[i]][msg.sender] += netRewardAmount;
+            // Update contributions for this season
+            contributions[seasonId][tokens[i]][msg.sender] += netRewardAmount;
 
             // Update last deposit timestamp
-            lastDepositTimestamp[tokens[i]][msg.sender] = block.timestamp;
+            lastDepositTimestamp[seasonId][tokens[i]][msg.sender] = block.timestamp;
 
             // Emit an event
-            emit RewardDeposited(msg.sender, address(this), tokens[i], netRewardAmount, block.timestamp);
+            emit RewardDeposited(msg.sender, tokens[i], netRewardAmount, seasonId, block.timestamp);
         }
     }
 
     /**
      * @notice Allows users to claim their rewards based on valid Merkle proofs for multiple tokens and points.
      * @dev This function validates the claims against a Merkle root, ensures the claims haven't been made previously, and transfers rewards based on user points.
-     * @param claimData A struct containing arrays of tokens, points, and merkle proofs for each claim.
-     * @custom:reverts INVALID_INPUT_LENGTH if the lengths of tokens, points, and merkleProofs arrays do not match.
-     * @custom:reverts HAS_CLAIMED if the user has already claimed rewards for any of the specified tokens.
+     * @param claimData An array of ClaimData structs containing arrays of seasonIds, tokens, points, and merkle proofs for each claim.
+     * @custom:reverts INVALID_INPUT_LENGTH if the lengths of seasonIds, tokens, points, and merkleProofs arrays do not match within a ClaimData struct.
+     * @custom:reverts HAS_CLAIMED if the user has already claimed rewards for any of the specified tokens in a season.
      * @custom:reverts INVALID_PROOF if any of the Merkle proofs do not validate the claim against the stored Merkle root.
      * @custom:reverts INSUFFICIENT_REWARDS if the contract doesn't have enough tokens to fulfill any of the claims.
+     * @custom:reverts ZERO_POINTS if any of the points values is zero.
      */
-    function claimRewards(ClaimData calldata claimData) external nonReentrant {
-        if (
-            claimData.tokens.length != claimData.points.length ||
-            claimData.tokens.length != claimData.merkleProofs.length
-        ) revert INVALID_INPUT_LENGTH();
+    function claimRewards(ClaimData[] calldata claimData) external nonReentrant {
+        uint256 totalClaimData = claimData.length;
 
-        for (uint256 i = 0; i < claimData.tokens.length; i++) {
-            // Fetch the merkleRoot
-            bytes32 merkleRoot = rewardDistController.getMerkleRoot();
+        for (uint256 i = 0; i < totalClaimData; i++) {
+            ClaimData memory data = claimData[i];
+            uint256 totalClaims = data.seasonId.length;
 
-            address token = claimData.tokens[i];
-            uint256 points = claimData.points[i];
-
-            // Check if the user has already claimed for this token
-            if (hasClaimed[token][msg.sender]) {
-                revert HAS_CLAIMED();
+            // Check that all arrays in the ClaimData struct have the same length
+            if (
+                data.token.length != totalClaims ||
+                data.points.length != totalClaims ||
+                data.merkleProof.length != totalClaims
+            ) {
+                revert INVALID_INPUT_LENGTH();
             }
 
-            bytes32 leaf = keccak256(abi.encodePacked(msg.sender, token, points));
-            if (!MerkleProof.verify(claimData.merkleProofs[i], merkleRoot, leaf)) revert INVALID_PROOF();
+            for (uint256 j = 0; j < totalClaims; j++) {
+                // Check if points are zero
+                if (data.points[j] == 0) {
+                    revert ZERO_POINTS();
+                }
 
-            // Mark as claimed for this token
-            hasClaimed[token][msg.sender] = true;
+                // Check if the user has already claimed for this season and token
+                if (hasClaimed[data.seasonId[j]][data.token[j]][msg.sender]) {
+                    revert HAS_CLAIMED();
+                }
 
-            uint256 totalRewards = totalDepositedRewards[token];
-            // Scale the points to match the token's decimals
-            uint256 claimableReward = points * POINTS_MULTIPLIER;
+                // Verify the Merkle proof
+                bytes32 merkleRoot = rewardDistController.getMerkleRoot(data.seasonId[j]);
+                bytes32 leaf = keccak256(abi.encodePacked(msg.sender, data.seasonId[j], data.token[j], data.points[j]));
+                if (!MerkleProof.verify(data.merkleProof[j], merkleRoot, leaf)) {
+                    revert INVALID_PROOF();
+                }
 
-            // Ensure the contract has enough tokens to fulfill the claim
-            if (claimableReward > totalRewards) revert INSUFFICIENT_REWARDS();
+                // Check if there are sufficient rewards
+                uint256 totalRewards = totalDepositedRewards[data.seasonId[j]][data.token[j]];
+                uint256 claimableReward = data.points[j] * POINTS_MULTIPLIER;
+                if (claimableReward > totalRewards) {
+                    revert INSUFFICIENT_REWARDS();
+                }
+            }
+        }
 
-            // Update total claimed rewards
-            totalClaimedRewards[token] += claimableReward;
+        // If all checks pass, process the claims
+        for (uint256 i = 0; i < totalClaimData; i++) {
+            ClaimData memory data = claimData[i];
+            uint256 totalClaims = data.seasonId.length;
 
-            // Transfer the reward to the user
-            IERC20(token).safeTransfer(msg.sender, claimableReward);
+            for (uint256 j = 0; j < totalClaims; j++) {
+                // Mark as claimed for this season and token
+                hasClaimed[data.seasonId[j]][data.token[j]][msg.sender] = true;
 
-            emit RewardClaimed(msg.sender, token, claimableReward);
+                uint256 claimableReward = data.points[j] * POINTS_MULTIPLIER;
+
+                // Update total claimed rewards
+                totalClaimedRewards[data.seasonId[j]][data.token[j]] += claimableReward;
+
+                // Transfer the reward to the user
+                IERC20(data.token[j]).safeTransfer(msg.sender, claimableReward);
+
+                emit RewardClaimed(msg.sender, data.token[j], claimableReward);
+            }
         }
     }
 
@@ -215,32 +245,25 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
      * @dev This function allows depositors to withdraw their tokens if no user has claimed rewards yet and at least 30 days have passed since the deposit.
      * @param tokens An array of token addresses for which to withdraw unclaimed rewards.
      * @custom:reverts ZERO_CONTRIBUTION if the caller has 0 contribution or already withdrawn.
-     * @custom:reverts REWARDS_ALREADY_CLAIMED if any user has already claimed rewards for the specified token.
      * @custom:reverts WITHDRAWAL_TOO_EARLY if 30 days haven't passed since the last deposit for a token.
      */
-    function withdrawUnusedRewards(address[] calldata tokens) external nonReentrant {
-        // Iterate through each token
+    function withdrawUnusedRewards(uint256 seasonId, address[] calldata tokens) external nonReentrant {
         for (uint256 i = 0; i < tokens.length; i++) {
-            uint256 depositorContribution = contributions[tokens[i]][msg.sender];
+            uint256 depositorContribution = contributions[seasonId][tokens[i]][msg.sender];
             if (depositorContribution == 0) {
                 revert ZERO_CONTRIBUTION();
             }
 
-            // Check if any rewards have been claimed
-            if (totalClaimedRewards[tokens[i]] > 0) {
-                revert REWARDS_ALREADY_CLAIMED();
-            }
-
             // Check if 30 days have passed since the last deposit
-            if (block.timestamp < lastDepositTimestamp[tokens[i]][msg.sender] + WITHDRAWAL_DELAY) {
+            if (block.timestamp < lastDepositTimestamp[seasonId][tokens[i]][msg.sender] + WITHDRAWAL_DELAY) {
                 revert WITHDRAWAL_TOO_EARLY();
             }
 
             // Subtract depositor's contribution from the total deposited rewards
-            totalDepositedRewards[tokens[i]] -= depositorContribution;
+            totalDepositedRewards[seasonId][tokens[i]] -= depositorContribution;
 
             // Reset the depositor's contribution for this token
-            contributions[tokens[i]][msg.sender] = 0;
+            contributions[seasonId][tokens[i]][msg.sender] = 0;
 
             // Transfer the unclaimed rewards back to the depositor
             IERC20(tokens[i]).safeTransfer(msg.sender, depositorContribution);
