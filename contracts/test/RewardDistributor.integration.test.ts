@@ -239,20 +239,22 @@ describe("RewardDistributor Integration Tests", function () {
     const merkleProofData = await fetchMerkleProof(user1Address);
 
     // Prepare claim data as in TransactionWrapper
-    const claimData = {
-      seasonId: [BigInt(merkleProofData.seasonId)],
-      token: merkleProofData.tokens,
-      points: merkleProofData.points.map(p => BigInt(p)),
-      merkleProof: merkleProofData.proofs,
-    };
+    const claimData = [
+      {
+        seasonId: [BigInt(merkleProofData.seasonId)],
+        token: merkleProofData.tokens,
+        points: merkleProofData.points.map(p => BigInt(p)),
+        merkleProof: merkleProofData.proofs,
+      },
+    ];
 
     // Prepare contract parameters as in TransactionWrapper
     const contracts = [
       {
         address: await distributor.getAddress(),
         abi: claimRewardsABI,
-        functionName: "claimRewards" as RewardDistributorFunctions,
-        args: [[claimData] as RewardDistributor.ClaimDataStruct[]],
+        functionName: "claimRewards",
+        args: [claimData],
       },
     ] as unknown as ContractFunctionParameters[];
 
@@ -260,9 +262,7 @@ describe("RewardDistributor Integration Tests", function () {
     const contract = contracts[0];
     const tx = await user1.sendTransaction({
       to: contract.address,
-      data: distributor.interface.encodeFunctionData("claimRewards", [
-        [claimData] as RewardDistributor.ClaimDataStruct[],
-      ]),
+      data: distributor.interface.encodeFunctionData("claimRewards", [claimData]),
     });
     // Verify the transaction hash
     const receipt = await tx.wait();
@@ -273,9 +273,10 @@ describe("RewardDistributor Integration Tests", function () {
     expect(user1Balance).to.equal(ethers.parseEther(merkleProofData.points[0].toString()));
 
     // Attempt double claim (should fail)
-    await expect(
-      distributor.connect(user1).claimRewards([claimData]),
-    ).to.be.revertedWithCustomError(distributor, "HAS_CLAIMED");
+    await expect(distributor.connect(user1).claimRewards(claimData)).to.be.revertedWithCustomError(
+      distributor,
+      "HAS_CLAIMED",
+    );
   });
 
   type RewardDistributorFunctions = "claimRewards"; // Add other function names if needed
