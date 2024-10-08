@@ -7,7 +7,8 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "dev": "next dev",
-    "generate-merkle-tree": "tsx scripts/generateMerkleTree.ts"
+    "generate-merkle-tree": "tsx scripts/generateMerkleTree.ts",
+    "update-user-documents": "tsx scripts/updateUserDocuments.ts"
   },
   "dependencies": {
     "@coinbase/onchainkit": "^0.33.3",

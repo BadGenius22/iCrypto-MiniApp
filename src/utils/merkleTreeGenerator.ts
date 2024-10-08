@@ -7,6 +7,7 @@ import path from "path";
 
 interface UserReward {
   address: string;
+  seasonId: number;
   tokenRewards: {
     [tokenAddress: string]: number; // Sum of points for each token address
   };
@@ -17,6 +18,7 @@ interface MerkleTreeData {
   leaves: string[];
   userProofs: {
     [address: string]: {
+      seasonId: number;
       tokens: string[];
       points: number[];
       proofs: string[][];
@@ -24,8 +26,8 @@ interface MerkleTreeData {
   };
 }
 
-async function generateMerkleTree(db: Firestore) {
-  console.log("Fetching user data from Firestore...");
+async function generateMerkleTree(db: Firestore, seasonId: number) {
+  console.log(`Fetching user data from Firestore for season ${seasonId}...`);
   const usersRef = db.collection("users");
   const userSnapshot = await usersRef.get();
 
@@ -55,32 +57,30 @@ async function generateMerkleTree(db: Firestore) {
 
       return {
         address: doc.id,
+        seasonId,
         tokenRewards,
       };
     })
     .filter((reward): reward is UserReward => reward !== null);
 
-  // Map to hold the original leaves (before sorting) keyed by user address
   const userLeavesMap: { [address: string]: { leaf: Buffer; token: string; points: bigint }[] } =
     {};
 
-  // Create leaves and store them in the map by user address
   const leaves = userRewards.flatMap(reward => {
     const tokens = Object.keys(reward.tokenRewards);
     const userLeaves = tokens.map(token => {
       const points = BigInt(reward.tokenRewards[token]);
 
       const packedData = encodePacked(
-        ["address", "address", "uint256"],
-        [reward.address as Address, token as Address, points],
+        ["address", "uint256", "address", "uint256"],
+        [reward.address as Address, BigInt(reward.seasonId), token as Address, points],
       );
       const leaf = keccak256(packedData);
 
       console.log(
-        `Generated leaf for user ${reward.address}, token ${token}, points ${points}: ${leaf}`,
+        `Generated leaf for user ${reward.address}, season ${reward.seasonId}, token ${token}, points ${points}: ${leaf}`,
       );
 
-      // Store the unsorted leaf for this user
       if (!userLeavesMap[reward.address]) {
         userLeavesMap[reward.address] = [];
       }
@@ -95,7 +95,6 @@ async function generateMerkleTree(db: Firestore) {
     return userLeaves;
   });
 
-  // Sort leaves to ensure consistent ordering
   leaves.sort((a, b) => a.leaf.compare(b.leaf));
 
   const merkleTree = new MerkleTree(
@@ -105,7 +104,7 @@ async function generateMerkleTree(db: Firestore) {
   );
   const rootHash = merkleTree.getHexRoot();
 
-  console.log(`Generated Merkle root: ${rootHash}`);
+  console.log(`Generated Merkle root for season ${seasonId}: ${rootHash}`);
 
   console.log("Generating and storing Merkle proofs...");
   const merkleTreeData: MerkleTreeData = {
@@ -114,7 +113,6 @@ async function generateMerkleTree(db: Firestore) {
     userProofs: {},
   };
 
-  // Now, generate the proofs using the original unsorted leaves from userLeavesMap
   for (const userAddress of Object.keys(userLeavesMap)) {
     const userLeaves = userLeavesMap[userAddress];
     const userProofs: string[][] = [];
@@ -125,7 +123,7 @@ async function generateMerkleTree(db: Firestore) {
       const proof = merkleTree.getHexProof(leaf.leaf);
 
       console.log(
-        `Storing proof for user ${userAddress}, token ${leaf.token}, points ${leaf.points}`,
+        `Storing proof for user ${userAddress}, season ${seasonId}, token ${leaf.token}, points ${leaf.points}`,
       );
       userProofs.push(proof);
       userTokens.push(leaf.token);
@@ -136,29 +134,24 @@ async function generateMerkleTree(db: Firestore) {
     }
 
     merkleTreeData.userProofs[userAddress] = {
+      seasonId,
       tokens: userTokens,
       points: userPoints,
       proofs: userProofs,
     };
   }
 
-  // Generate timestamp for the file name
   const timestamp = new Date().toISOString().replace(/[:T]/g, "-").replace(/\..+/, "");
-
-  // Create file name with timestamp
-  const fileName = `merkle-tree-data-${timestamp}.json`;
-
-  // Save Merkle tree data to JSON file in src/data/logs folder
+  const fileName = `merkle-tree-data-season-${seasonId}-${timestamp}.json`;
   const jsonFilePath = path.resolve(process.cwd(), "src", "data", "logs", fileName);
 
-  // Ensure the src/data directory exists
   const dataDir = path.dirname(jsonFilePath);
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
   fs.writeFileSync(jsonFilePath, JSON.stringify(merkleTreeData, null, 2));
-  console.log(`Merkle tree data saved to ${jsonFilePath}`);
+  console.log(`Merkle tree data for season ${seasonId} saved to ${jsonFilePath}`);
 
   return rootHash;
 }
