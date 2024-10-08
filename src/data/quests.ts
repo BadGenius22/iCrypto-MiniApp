@@ -11,7 +11,6 @@ export interface TokenReward {
 
 export interface Quest {
   id: number;
-  seasonId: number; // Add this field
   title: string;
   description: string;
   articleUrl?: string;
@@ -20,6 +19,14 @@ export interface Quest {
   socialChannel?: SocialChannel;
   type: "social" | "article" | "custom";
   requiresFeedback: boolean;
+}
+
+export interface Season {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  quests: number[]; // Array of quest IDs
 }
 
 export const socialChannels: SocialChannel[] = [
@@ -45,10 +52,20 @@ export const socialChannels: SocialChannel[] = [
   },
 ];
 
+export const seasons: Season[] = [
+  {
+    id: 1,
+    name: "Season 1",
+    startDate: "2024-10-01",
+    endDate: "2024-10-31",
+    quests: [1, 2, 3, 4, 5],
+  },
+  // ... more seasons
+];
+
 export const quests: Quest[] = [
   {
     id: 1,
-    seasonId: 1,
     title: "Follow iCrypto Media on Instagram",
     description: "Follow our Instagram channel for the latest updates.",
     tokenRewards: [{ tokenId: 1, points: 5 }],
@@ -59,7 +76,6 @@ export const quests: Quest[] = [
   },
   {
     id: 2,
-    seasonId: 1,
     title: "Follow iCrypto Media on TikTok",
     description: "Join us on TikTok for short, informative crypto content.",
     tokenRewards: [{ tokenId: 1, points: 5 }],
@@ -70,7 +86,6 @@ export const quests: Quest[] = [
   },
   {
     id: 3,
-    seasonId: 1,
     title: "Subscribe to iCrypto Media on YouTube",
     description: "Subscribe to our YouTube channel for in-depth crypto analysis.",
     tokenRewards: [{ tokenId: 1, points: 5 }],
@@ -81,7 +96,6 @@ export const quests: Quest[] = [
   },
   {
     id: 4,
-    seasonId: 1,
     title: "Listen to Podcast iCrypto Media on Spotify",
     description: "Listen to our Spotify show for crypto insights.",
     tokenRewards: [{ tokenId: 1, points: 5 }],
@@ -92,7 +106,6 @@ export const quests: Quest[] = [
   },
   {
     id: 5,
-    seasonId: 1,
     title: "Quest 1: Baca belajar web3 dan coinbase wallet",
     description: "Baca artikel tentang belajar web3 dan coinbase wallet",
     articleUrl:
@@ -104,8 +117,11 @@ export const quests: Quest[] = [
   // Add more quests here in the future
 ];
 
-export const seasons = [
-  { id: 1, name: "Season 1", startDate: "2024-10-01", endDate: "2024-10-31" },
-  { id: 2, name: "Season 2", startDate: "2024-11-01", endDate: "2024-11-30" },
-  // ... add more seasons as needed
-];
+export function getSeasonIdForQuest(questId: number): number | undefined {
+  for (const season of seasons) {
+    if (season.quests.includes(questId)) {
+      return season.id;
+    }
+  }
+  return undefined;
+}

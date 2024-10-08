@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
-import { quests, Quest } from "../data/quests";
+import { quests, Quest, getSeasonIdForQuest } from "../data/quests";
 import { Progress } from "./Progress";
 import {
   saveUserProgress,
@@ -87,7 +87,18 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
   const completeQuest = async (quest: Quest) => {
     if (!address) return;
 
-    const newTokenRewards = [...tokenRewards, ...quest.tokenRewards];
+    const seasonId = getSeasonIdForQuest(quest.id);
+    if (seasonId === undefined) {
+      console.error(`No season found for quest ${quest.id}`);
+      return;
+    }
+
+    const newTokenReward: TokenReward = {
+      points: quest.tokenRewards[0].points,
+      seasonId: seasonId,
+      tokenId: quest.tokenRewards[0].tokenId,
+    };
+    const newTokenRewards = [...tokenRewards, newTokenReward];
     const newTotalPoints = newTokenRewards.reduce((sum, reward) => sum + reward.points, 0);
     const newCompletedQuests = [...completedQuests, quest.id];
     const newLevel = Math.floor(newTotalPoints / 50) + 1;
@@ -105,16 +116,20 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
       tokenRewards: newTokenRewards,
       submissions: {
         ...initialProgress?.submissions,
+        [quest.id]: {
+          seasonId: seasonId,
+          summary: takeaways,
+          feedback,
+        },
       },
       hasClaimedRewards: false,
     };
 
-    if (quest.requiresFeedback) {
-      updatedProgress.submissions[quest.id] = { summary: takeaways, feedback };
-      await addCompletedQuest(address, quest.id, quest.seasonId, takeaways, feedback);
-    }
-
     await saveUserProgress(updatedProgress);
+
+    if (quest.requiresFeedback) {
+      await addCompletedQuest(address, quest.id, seasonId, takeaways, feedback);
+    }
 
     setProgress((newTotalPoints % 50) * 2);
     if (newLevel > level) {
@@ -249,7 +264,6 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
       >
         <h3 className="font-bold text-xl mb-4 text-gray-800">{quest.title}</h3>
         <p className="mb-4 text-gray-600">{quest.description}</p>
-        <p className="mb-4 text-gray-500">Season: {quest.seasonId}</p>
         {quest.type === "social" && quest.socialChannel ? (
           <button
             onClick={() => handleSocialFollow(quest)}

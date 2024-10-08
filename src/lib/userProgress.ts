@@ -2,18 +2,19 @@ import { doc, setDoc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 export interface TokenReward {
-  tokenId: number;
   points: number;
+  seasonId: number;
+  tokenId: number;
 }
 
 export interface UserProgress {
   address: string;
   level: number;
-  completedQuests: number[]; // Changed from string[] to number[]
+  completedQuests: number[];
   tokenRewards: TokenReward[];
   submissions: {
     [questId: number]: {
-      // Changed from string to number
+      seasonId: number;
       summary: string;
       feedback: string;
     };
@@ -59,7 +60,7 @@ export async function updateCompletedQuests(
 
 export async function addCompletedQuest(
   address: string,
-  questId: number,
+  questId: number, // Kept as number
   seasonId: number,
   summary: string,
   feedback: string,
@@ -67,6 +68,6 @@ export async function addCompletedQuest(
   const userRef = doc(db, "users", address);
   await updateDoc(userRef, {
     completedQuests: arrayUnion(questId),
-    [`submissions.${questId}`]: { summary, feedback, seasonId },
+    [`submissions.${questId}`]: { seasonId, summary, feedback },
   });
 }
