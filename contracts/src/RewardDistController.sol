@@ -13,15 +13,16 @@ contract RewardDistController is OwnableUpgradeable {
     event WhitelistAdded(address[] tokens, uint256[] minAmounts);
     event WhitelistEdited(address[] tokens, uint256[] minAmounts);
     event WhitelistRemoved(address[] tokens);
-
-    event MerkleRootUpdated(bytes32 newMerkleRoot);
-
-    bytes32 public merkleRoot;
+    event MerkleRootUpdated(uint256 indexed seasonId, bytes32 newMerkleRoot);
 
     // token reward -> bool
     mapping(address => bool) public whitelisted;
 
+    // token reward -> min amount
     mapping(address => uint256) public minAmount;
+
+    // seasonId -> merkleRoot
+    mapping(uint256 => bytes32) public merkleRoot;
 
     // =============================================================
     //                      State Variables
@@ -105,19 +106,6 @@ contract RewardDistController is OwnableUpgradeable {
     }
 
     /**
-     * @notice Updates the Merkle root for user reward distribution.
-     * @param newMerkleRoot The new Merkle root to be set for the reward distribution.
-     * @dev This function can only be called by the contract owner. It updates the Merkle root for user reward distribution.
-     * The new Merkle root replaces the previous value.
-     * Emits a `MerkleRootUpdated` event for the update.
-     */
-    function updateMerkleRoot(bytes32 newMerkleRoot) external onlyOwner {
-        merkleRoot = newMerkleRoot;
-
-        emit MerkleRootUpdated(newMerkleRoot);
-    }
-
-    /**
      * @notice Gets all whitelisted reward tokens.
      * @dev This function returns the addresses of all tokens that have been whitelisted as rewards.
      * @return An array of reward token addresses.
@@ -145,14 +133,6 @@ contract RewardDistController is OwnableUpgradeable {
         return minAmount[token];
     }
 
-    /**
-     * @notice Gets the current merkle root.
-     * @return The current merkle root.
-     */
-    function getMerkleRoot() external view returns (bytes32) {
-        return merkleRoot;
-    }
-
     function setRewardFee(uint256 newFee) external onlyOwner {
         require(newFee <= FEE_SCALE, "Invalid fee");
         rewardFee = newFee;
@@ -160,5 +140,28 @@ contract RewardDistController is OwnableUpgradeable {
 
     function setFeeRecipient(address recipient) external onlyOwner {
         feeRecipient = recipient;
+    }
+
+    /**
+     * @notice Updates the Merkle root for user reward distribution.
+     * @param seasonId The seasonId to be set for the reward distribution.
+     * @param newMerkleRoot The new Merkle root to be set for the reward distribution.
+     * @dev This function can only be called by the contract owner. It updates the Merkle root for user reward distribution.
+     * The new Merkle root replaces the previous value.
+     * Emits a `MerkleRootUpdated` event for the update.
+     */
+    function updateMerkleRoot(uint256 seasonId, bytes32 newMerkleRoot) external onlyOwner {
+        merkleRoot[seasonId] = newMerkleRoot;
+
+        emit MerkleRootUpdated(seasonId, newMerkleRoot);
+    }
+
+    /**
+     * @notice Gets the Merkle root for a given seasonId.
+     * @param seasonId The seasonId to get the Merkle root for.
+     * @return The Merkle root for the given seasonId.
+     */
+    function getMerkleRoot(uint256 seasonId) external view returns (bytes32) {
+        return merkleRoot[seasonId];
     }
 }

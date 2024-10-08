@@ -32,14 +32,18 @@ async function main() {
     console.log("Project ID:", process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
     console.log("Service Account Path:", serviceAccountPath);
 
-    console.log("Starting Merkle tree generation...");
-    const rootHash = await generateMerkleTree(db);
-    if (rootHash === "0x") {
-      console.warn(
-        "Warning: Root hash is empty. This may indicate no data was processed."
-      );
+    // Get season ID from command line argument
+    const seasonId = parseInt(process.argv[2], 10);
+    if (isNaN(seasonId)) {
+      throw new Error("Please provide a valid season ID as a command line argument");
     }
-    console.log("Merkle tree generation completed.");
+
+    console.log(`Starting Merkle tree generation for season ${seasonId}...`);
+    const rootHash = await generateMerkleTree(db, seasonId);
+    if (rootHash === "0x") {
+      console.warn("Warning: Root hash is empty. This may indicate no data was processed.");
+    }
+    console.log(`Merkle tree for season ${seasonId} generated successfully.`);
     console.log("Root hash:", rootHash);
   } catch (error) {
     console.error("Error generating Merkle tree:", error);

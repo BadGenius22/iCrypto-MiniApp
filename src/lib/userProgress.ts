@@ -2,17 +2,19 @@ import { doc, setDoc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 export interface TokenReward {
-  tokenId: number;
   points: number;
+  seasonId: number;
+  tokenId: number;
 }
 
 export interface UserProgress {
   address: string;
   level: number;
-  completedQuests: string[];
+  completedQuests: number[];
   tokenRewards: TokenReward[];
   submissions: {
-    [questId: string]: {
+    [questId: number]: {
+      seasonId: number;
       summary: string;
       feedback: string;
     };
@@ -29,9 +31,7 @@ export const saveUserProgress = async (progress: UserProgress) => {
   }
 };
 
-export const getUserProgress = async (
-  address: string
-): Promise<UserProgress | null> => {
+export const getUserProgress = async (address: string): Promise<UserProgress | null> => {
   try {
     const userRef = doc(db, "users", address);
     const userDoc = await getDoc(userRef);
@@ -45,17 +45,14 @@ export const getUserProgress = async (
   }
 };
 
-export async function updateUserPoints(
-  address: string,
-  points: number
-): Promise<void> {
+export async function updateUserPoints(address: string, points: number): Promise<void> {
   const userRef = doc(db, "users", address);
   await updateDoc(userRef, { points });
 }
 
 export async function updateCompletedQuests(
   address: string,
-  completedQuests: string[]
+  completedQuests: string[],
 ): Promise<void> {
   const userRef = doc(db, "users", address);
   await updateDoc(userRef, { completedQuests });
@@ -63,13 +60,14 @@ export async function updateCompletedQuests(
 
 export async function addCompletedQuest(
   address: string,
-  questId: string,
+  questId: number, // Kept as number
+  seasonId: number,
   summary: string,
-  feedback: string
+  feedback: string,
 ): Promise<void> {
   const userRef = doc(db, "users", address);
   await updateDoc(userRef, {
     completedQuests: arrayUnion(questId),
-    [`submissions.${questId}`]: { summary, feedback },
+    [`submissions.${questId}`]: { seasonId, summary, feedback },
   });
 }

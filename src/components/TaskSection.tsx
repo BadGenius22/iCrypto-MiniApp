@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
-import { quests, Quest } from "../data/quests";
+import { quests, Quest, getSeasonIdForQuest } from "../data/quests";
 import { Progress } from "./Progress";
 import {
   saveUserProgress,
@@ -11,6 +11,8 @@ import {
   TokenReward,
 } from "../lib/userProgress";
 import TransactionWrapper from "./TransactionWrapper";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../config/firebase";
 
 interface TaskSectionProps {
   initialProgress: UserProgress | null;
@@ -22,7 +24,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
   const [feedback, setFeedback] = useState("");
   const [points, setPoints] = useState(0);
   const [level, setLevel] = useState(1);
-  const [completedQuests, setCompletedQuests] = useState<string[]>([]);
+  const [completedQuests, setCompletedQuests] = useState<number[]>([]);
   const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
   const [showReward, setShowReward] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -37,11 +39,26 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
   const [hasClaimedRewards, setHasClaimedRewards] = useState(false);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [tokenRewards, setTokenRewards] = useState<TokenReward[]>([]);
+  const [firestoreClaimStatus, setFirestoreClaimStatus] = useState(false);
 
   useEffect(() => {
     if (address) {
       loadUserProgress();
     }
+  }, [address]);
+
+  useEffect(() => {
+    async function fetchClaimStatus() {
+      if (address) {
+        const userDocRef = doc(db, "users", address);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          setFirestoreClaimStatus(userDocSnap.data().hasClaimedRewards || false);
+        }
+      }
+    }
+
+    fetchClaimStatus();
   }, [address]);
 
   const loadUserProgress = async () => {
@@ -60,7 +77,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
     }
   };
 
-  const getNextIncompleteQuestIndex = (completedQuestIds: string[]) => {
+  const getNextIncompleteQuestIndex = (completedQuestIds: number[]) => {
     return quests.findIndex(quest => !completedQuestIds.includes(quest.id));
   };
 
@@ -87,7 +104,18 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
   const completeQuest = async (quest: Quest) => {
     if (!address) return;
 
-    const newTokenRewards = [...tokenRewards, ...quest.tokenRewards];
+    const seasonId = getSeasonIdForQuest(quest.id);
+    if (seasonId === undefined) {
+      console.error(`No season found for quest ${quest.id}`);
+      return;
+    }
+
+    const newTokenReward: TokenReward = {
+      points: quest.tokenRewards[0].points,
+      seasonId: seasonId,
+      tokenId: quest.tokenRewards[0].tokenId,
+    };
+    const newTokenRewards = [...tokenRewards, newTokenReward];
     const newTotalPoints = newTokenRewards.reduce((sum, reward) => sum + reward.points, 0);
     const newCompletedQuests = [...completedQuests, quest.id];
     const newLevel = Math.floor(newTotalPoints / 50) + 1;
@@ -105,16 +133,20 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
       tokenRewards: newTokenRewards,
       submissions: {
         ...initialProgress?.submissions,
+        [quest.id]: {
+          seasonId: seasonId,
+          summary: takeaways,
+          feedback,
+        },
       },
       hasClaimedRewards: false,
     };
 
-    if (quest.requiresFeedback) {
-      updatedProgress.submissions[quest.id] = { summary: takeaways, feedback };
-      await addCompletedQuest(address, quest.id, takeaways, feedback);
-    }
-
     await saveUserProgress(updatedProgress);
+
+    if (quest.requiresFeedback) {
+      await addCompletedQuest(address, quest.id, seasonId, takeaways, feedback);
+    }
 
     setProgress((newTotalPoints % 50) * 2);
     if (newLevel > level) {
@@ -138,7 +170,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
     return takeawaysWordCount >= 5 && feedbackWordCount >= 5;
   };
 
-  const isQuestCompleted = (questId: string) => completedQuests.includes(questId);
+  const isQuestCompleted = (questId: number) => completedQuests.includes(questId);
 
   const handleClaim = () => {
     if (hasClaimedRewards) {
@@ -442,6 +474,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
           transactionHash={transactionHash}
           onClaimSuccess={handleClaimSuccess}
           onClaimError={handleClaimError}
+          firestoreClaimStatus={firestoreClaimStatus}
         />
       )}
     </div>
