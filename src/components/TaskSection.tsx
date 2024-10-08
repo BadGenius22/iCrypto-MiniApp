@@ -11,6 +11,8 @@ import {
   TokenReward,
 } from "../lib/userProgress";
 import TransactionWrapper from "./TransactionWrapper";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../config/firebase";
 
 interface TaskSectionProps {
   initialProgress: UserProgress | null;
@@ -37,11 +39,26 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
   const [hasClaimedRewards, setHasClaimedRewards] = useState(false);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [tokenRewards, setTokenRewards] = useState<TokenReward[]>([]);
+  const [firestoreClaimStatus, setFirestoreClaimStatus] = useState(false);
 
   useEffect(() => {
     if (address) {
       loadUserProgress();
     }
+  }, [address]);
+
+  useEffect(() => {
+    async function fetchClaimStatus() {
+      if (address) {
+        const userDocRef = doc(db, "users", address);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+          setFirestoreClaimStatus(userDocSnap.data().hasClaimedRewards || false);
+        }
+      }
+    }
+
+    fetchClaimStatus();
   }, [address]);
 
   const loadUserProgress = async () => {
@@ -457,6 +474,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
           transactionHash={transactionHash}
           onClaimSuccess={handleClaimSuccess}
           onClaimError={handleClaimError}
+          firestoreClaimStatus={firestoreClaimStatus}
         />
       )}
     </div>
