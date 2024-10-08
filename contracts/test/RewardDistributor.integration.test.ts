@@ -16,9 +16,9 @@ describe("RewardDistributor Integration Tests", function () {
 
   const user1Address = "0x071c052a78cF8dBdD4F61381596ec64078d1840B";
   const user2Address = "0xE755f77162bF252AE289482EDA6f48f4C0190306";
+  const SEASON_ID = 1;
 
   beforeEach(async function () {
-    // Switch to Base Sepolia network
     await network.provider.request({
       method: "hardhat_reset",
       params: [
@@ -78,8 +78,8 @@ describe("RewardDistributor Integration Tests", function () {
     const [, depositor] = await ethers.getSigners();
     await token.mint(await depositor.getAddress(), ethers.parseEther("5000"));
 
-    // Update Merkle root
-    await controller.updateMerkleRoot(merkleTreeData.root);
+    // Update Merkle root with seasonId
+    await controller.updateMerkleRoot(SEASON_ID, merkleTreeData.root);
   });
 
   it("should deposit rewards and collect fees correctly", async function () {
@@ -96,7 +96,7 @@ describe("RewardDistributor Integration Tests", function () {
     const initialDepositorBalance = await token.balanceOf(await depositor.getAddress());
     const initialOwnerBalance = await token.balanceOf(await owner.getAddress());
 
-    await distributor.connect(depositor).depositRewards(tokens, amounts);
+    await distributor.connect(depositor).depositRewards(SEASON_ID, tokens, amounts);
 
     const finalDistributorBalance = await token.balanceOf(await distributor.getAddress());
     const finalDepositorBalance = await token.balanceOf(await depositor.getAddress());
@@ -122,7 +122,7 @@ describe("RewardDistributor Integration Tests", function () {
 
     // Approve and deposit
     await token.connect(depositor).approve(await distributor.getAddress(), depositAmount);
-    await distributor.connect(depositor).depositRewards(tokens, amounts);
+    await distributor.connect(depositor).depositRewards(SEASON_ID, tokens, amounts);
 
     // Add funds to user1 and user2 by transferring from a funded account
     const [fundedAccount] = await ethers.getSigners();
@@ -140,12 +140,13 @@ describe("RewardDistributor Integration Tests", function () {
     const claimAmount1 = ethers.parseEther(claimData1.points[0].toString());
 
     const claimDataStruct1: RewardDistributor.ClaimDataStruct = {
-      tokens: claimData1.tokens,
+      seasonId: [BigInt(SEASON_ID)],
+      token: claimData1.tokens,
       points: claimData1.points.map(p => BigInt(p)),
-      merkleProofs: claimData1.proofs,
+      merkleProof: claimData1.proofs,
     };
 
-    await distributor.connect(user1).claimRewards(claimDataStruct1);
+    await distributor.connect(user1).claimRewards([claimDataStruct1]);
 
     const user1Balance = await token.balanceOf(user1Address);
     expect(user1Balance).to.equal(claimAmount1);
@@ -155,12 +156,13 @@ describe("RewardDistributor Integration Tests", function () {
     const claimAmount2 = ethers.parseEther(claimData2.points[0].toString());
 
     const claimDataStruct2: RewardDistributor.ClaimDataStruct = {
-      tokens: claimData2.tokens,
+      seasonId: [BigInt(SEASON_ID)],
+      token: claimData2.tokens,
       points: claimData2.points.map(p => BigInt(p)),
-      merkleProofs: claimData2.proofs,
+      merkleProof: claimData2.proofs,
     };
 
-    await distributor.connect(user2).claimRewards(claimDataStruct2);
+    await distributor.connect(user2).claimRewards([claimDataStruct2]);
 
     const user2Balance = await token.balanceOf(user2Address);
     expect(user2Balance).to.equal(claimAmount2);
@@ -174,7 +176,7 @@ describe("RewardDistributor Integration Tests", function () {
 
     // Approve and deposit
     await token.connect(depositor).approve(await distributor.getAddress(), depositAmount);
-    await distributor.connect(depositor).depositRewards(tokens, amounts);
+    await distributor.connect(depositor).depositRewards(SEASON_ID, tokens, amounts);
 
     // Add funds to user1 by transferring from a funded account
     const [fundedAccount] = await ethers.getSigners();
@@ -186,17 +188,18 @@ describe("RewardDistributor Integration Tests", function () {
     const claimData = merkleTreeData.userProofs[user1Address];
 
     const claimDataStruct: RewardDistributor.ClaimDataStruct = {
-      tokens: claimData.tokens,
+      seasonId: [BigInt(SEASON_ID)],
+      token: claimData.tokens,
       points: claimData.points.map(p => BigInt(p)),
-      merkleProofs: claimData.proofs,
+      merkleProof: claimData.proofs,
     };
 
     // First claim should succeed
-    await distributor.connect(user1).claimRewards(claimDataStruct);
+    await distributor.connect(user1).claimRewards([claimDataStruct]);
 
     // Second claim should fail
     await expect(
-      distributor.connect(user1).claimRewards(claimDataStruct),
+      distributor.connect(user1).claimRewards([claimDataStruct]),
     ).to.be.revertedWithCustomError(distributor, "HAS_CLAIMED");
   });
 
@@ -208,7 +211,7 @@ describe("RewardDistributor Integration Tests", function () {
 
     // Approve and deposit
     await token.connect(depositor).approve(await distributor.getAddress(), depositAmount);
-    await distributor.connect(depositor).depositRewards(tokens, amounts);
+    await distributor.connect(depositor).depositRewards(SEASON_ID, tokens, amounts);
 
     // Add funds to user1 by transferring from a funded account
     const [fundedAccount] = await ethers.getSigners();
@@ -223,6 +226,7 @@ describe("RewardDistributor Integration Tests", function () {
 
       if (proofData) {
         return {
+          seasonId: SEASON_ID,
           tokens: proofData.tokens,
           points: proofData.points,
           proofs: proofData.proofs,
@@ -236,9 +240,10 @@ describe("RewardDistributor Integration Tests", function () {
 
     // Prepare claim data as in TransactionWrapper
     const claimData = {
-      tokens: merkleProofData.tokens,
+      seasonId: [BigInt(merkleProofData.seasonId)],
+      token: merkleProofData.tokens,
       points: merkleProofData.points.map(p => BigInt(p)),
-      merkleProofs: merkleProofData.proofs,
+      merkleProof: merkleProofData.proofs,
     };
 
     // Prepare contract parameters as in TransactionWrapper
@@ -247,7 +252,7 @@ describe("RewardDistributor Integration Tests", function () {
         address: await distributor.getAddress(),
         abi: claimRewardsABI,
         functionName: "claimRewards" as RewardDistributorFunctions,
-        args: [claimData as RewardDistributor.ClaimDataStruct],
+        args: [[claimData] as RewardDistributor.ClaimDataStruct[]],
       },
     ] as unknown as ContractFunctionParameters[];
 
@@ -256,23 +261,21 @@ describe("RewardDistributor Integration Tests", function () {
     const tx = await user1.sendTransaction({
       to: contract.address,
       data: distributor.interface.encodeFunctionData("claimRewards", [
-        claimData as RewardDistributor.ClaimDataStruct,
+        [claimData] as RewardDistributor.ClaimDataStruct[],
       ]),
     });
     // Verify the transaction hash
     const receipt = await tx.wait();
     expect(receipt?.hash).to.be.a("string");
-    // console.log("Transaction hash:", receipt?.hash);
 
     // Verify the claim was successful
     const user1Balance = await token.balanceOf(user1Address);
     expect(user1Balance).to.equal(ethers.parseEther(merkleProofData.points[0].toString()));
 
     // Attempt double claim (should fail)
-    await expect(distributor.connect(user1).claimRewards(claimData)).to.be.revertedWithCustomError(
-      distributor,
-      "HAS_CLAIMED",
-    );
+    await expect(
+      distributor.connect(user1).claimRewards([claimData]),
+    ).to.be.revertedWithCustomError(distributor, "HAS_CLAIMED");
   });
 
   type RewardDistributorFunctions = "claimRewards"; // Add other function names if needed
