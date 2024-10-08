@@ -54,6 +54,7 @@ export default function TransactionWrapper({
 }: TransactionWrapperProps) {
   const [merkleProofData, setMerkleProofData] = useState<MerkleProofData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showWarning, setShowWarning] = useState(false);
 
   useEffect(() => {
     const loadMerkleProofs = async () => {
@@ -157,6 +158,10 @@ export default function TransactionWrapper({
     );
   }
 
+  const handleClaimClick = () => {
+    setShowWarning(true);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -174,27 +179,52 @@ export default function TransactionWrapper({
         >
           You've earned <span className="font-bold text-purple-900">{points} $ICR tokens</span>!
         </motion.p>
-        <Transaction
-          contracts={contracts}
-          chainId={BASE_SEPOLIA_CHAIN_ID}
-          onError={onClaimError}
-          onSuccess={handleSuccess}
-        >
-          <TransactionButton
+
+        {showWarning ? (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded">
+            <p className="font-bold">Warning:</p>
+            <p>Please ensure you have completed all quests before claiming rewards.</p>
+            <p>You can only claim rewards once when the season ends.</p>
+            <p>Are you sure you want to proceed?</p>
+            <div className="mt-4">
+              <button
+                onClick={() => setShowWarning(false)}
+                className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mr-2"
+              >
+                Cancel
+              </button>
+              <Transaction
+                contracts={contracts}
+                chainId={BASE_SEPOLIA_CHAIN_ID}
+                onError={onClaimError}
+                onSuccess={handleSuccess}
+              >
+                <TransactionButton
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+                  text="Proceed with Claim"
+                />
+              </Transaction>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={handleClaimClick}
             className={`px-8 py-4 rounded-full font-bold text-xl transition duration-300 ${
               hasClaimedRewards
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-purple-600 hover:bg-purple-700 transform hover:scale-105"
             } text-white shadow-lg`}
-            text={hasClaimedRewards ? "Rewards Already Claimed" : "🎉 Claim $ICR Tokens Now! 🎉"}
             disabled={isClaimInitiated || hasClaimedRewards}
-          />
-          {isClaimInitiated && !hasClaimedRewards && (
-            <TransactionStatus>
-              <div className="mt-4 text-center font-semibold">Claiming your rewards...</div>
-            </TransactionStatus>
-          )}
-        </Transaction>
+          >
+            {hasClaimedRewards ? "Rewards Already Claimed" : "🎉 Claim $ICR Tokens Now! 🎉"}
+          </button>
+        )}
+
+        {isClaimInitiated && !hasClaimedRewards && (
+          <TransactionStatus>
+            <div className="mt-4 text-center font-semibold">Claiming your rewards...</div>
+          </TransactionStatus>
+        )}
       </div>
     </motion.div>
   );
