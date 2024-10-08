@@ -38,6 +38,7 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
     );
     event RewardClaimed(address indexed user, address indexed tokens, uint256 rewardAmounts);
     event UnusedRewardsWithdrawn(address indexed depositor, address indexed token, uint256 amount);
+    event StuckTokenWithdrawn(address indexed token, uint256 amount, address indexed recipient);
 
     // =============================================================
     //                          Errors
@@ -56,6 +57,7 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
     error INSUFFICIENT_REWARDS();
     error WITHDRAWAL_TOO_EARLY();
     error ZERO_POINTS(); // Add this new error
+    error INSUFFICIENT_BALANCE();
 
     // =============================================================
     //                   Mappings
@@ -271,5 +273,23 @@ contract RewardDistributor is Initializable, OwnableUpgradeable, ReentrancyGuard
             // Emit an event for the withdrawal
             emit UnusedRewardsWithdrawn(msg.sender, tokens[i], depositorContribution);
         }
+    }
+
+    /**
+     * @notice Allows the contract owner to withdraw any ERC20 tokens stuck in the contract
+     * @dev This function should only be used in emergency situations
+     * @param token The address of the ERC20 token to withdraw
+     * @param amount The amount of tokens to withdraw
+     */
+    function withdrawTokenIncaseStuck(address token, uint256 amount) external onlyOwner {
+        if (token == address(0)) revert INVALID_TOKENS_ADDRESS();
+        if (amount == 0) revert ZERO_AMOUNT();
+
+        uint256 contractBalance = IERC20(token).balanceOf(address(this));
+        if (amount > contractBalance) revert INSUFFICIENT_BALANCE();
+
+        IERC20(token).safeTransfer(owner(), amount);
+
+        emit StuckTokenWithdrawn(token, amount, owner());
     }
 }

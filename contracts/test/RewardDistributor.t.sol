@@ -231,4 +231,50 @@ contract RewardDistributorTest is Test {
         vm.expectRevert(RewardDistributor.WITHDRAWAL_TOO_EARLY.selector);
         distributor.withdrawUnusedRewards(SEASON_ID, tokens);
     }
+
+    function testWithdrawTokenIncaseStuck() public {
+        // First, deposit some rewards
+        uint256 depositAmount = 500 * DECIMALS;
+        token1.approve(address(distributor), depositAmount);
+
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(token1);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = depositAmount;
+
+        distributor.depositRewards(SEASON_ID, tokens, amounts);
+
+        // Simulate some tokens getting stuck by transferring directly to the contract
+        uint256 stuckAmount = 100 * DECIMALS;
+        token1.transfer(address(distributor), stuckAmount);
+
+        uint256 initialContractBalance = token1.balanceOf(address(distributor));
+        uint256 initialOwnerBalance = token1.balanceOf(owner);
+
+        // Non-owner should not be able to withdraw
+        vm.prank(address(0xdead));
+        vm.expectRevert();
+        distributor.withdrawTokenIncaseStuck(address(token1), stuckAmount);
+
+        // Owner should be able to withdraw
+        distributor.withdrawTokenIncaseStuck(address(token1), stuckAmount);
+
+        uint256 finalContractBalance = token1.balanceOf(address(distributor));
+        uint256 finalOwnerBalance = token1.balanceOf(owner);
+
+        // Check balances
+        assertEq(finalContractBalance, initialContractBalance - stuckAmount);
+        assertEq(finalOwnerBalance, initialOwnerBalance + stuckAmount);
+
+        // Try to withdraw more than available balance
+        vm.expectRevert(RewardDistributor.INSUFFICIENT_BALANCE.selector);
+        distributor.withdrawTokenIncaseStuck(address(token1), initialContractBalance + 1);
+
+        // Try to withdraw with invalid inputs
+        vm.expectRevert(RewardDistributor.INVALID_TOKENS_ADDRESS.selector);
+        distributor.withdrawTokenIncaseStuck(address(0), stuckAmount);
+
+        vm.expectRevert(RewardDistributor.ZERO_AMOUNT.selector);
+        distributor.withdrawTokenIncaseStuck(address(token1), 0);
+    }
 }
