@@ -22,7 +22,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
   const [feedback, setFeedback] = useState("");
   const [points, setPoints] = useState(0);
   const [level, setLevel] = useState(1);
-  const [completedQuests, setCompletedQuests] = useState<string[]>([]);
+  const [completedQuests, setCompletedQuests] = useState<number[]>([]);
   const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
   const [showReward, setShowReward] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -60,7 +60,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
     }
   };
 
-  const getNextIncompleteQuestIndex = (completedQuestIds: string[]) => {
+  const getNextIncompleteQuestIndex = (completedQuestIds: number[]) => {
     return quests.findIndex(quest => !completedQuestIds.includes(quest.id));
   };
 
@@ -111,7 +111,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
 
     if (quest.requiresFeedback) {
       updatedProgress.submissions[quest.id] = { summary: takeaways, feedback };
-      await addCompletedQuest(address, quest.id, takeaways, feedback);
+      await addCompletedQuest(address, quest.id, quest.seasonId, takeaways, feedback);
     }
 
     await saveUserProgress(updatedProgress);
@@ -138,7 +138,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
     return takeawaysWordCount >= 5 && feedbackWordCount >= 5;
   };
 
-  const isQuestCompleted = (questId: string) => completedQuests.includes(questId);
+  const isQuestCompleted = (questId: number) => completedQuests.includes(questId);
 
   const handleClaim = () => {
     if (hasClaimedRewards) {
@@ -249,6 +249,7 @@ const TaskSection: React.FC<TaskSectionProps> = ({ initialProgress, address }) =
       >
         <h3 className="font-bold text-xl mb-4 text-gray-800">{quest.title}</h3>
         <p className="mb-4 text-gray-600">{quest.description}</p>
+        <p className="mb-4 text-gray-500">Season: {quest.seasonId}</p>
         {quest.type === "social" && quest.socialChannel ? (
           <button
             onClick={() => handleSocialFollow(quest)}
