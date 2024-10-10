@@ -81,6 +81,26 @@ The iCrypto MiniApp implements a token rewards whitelist system, enabling collab
 
 By implementing this token rewards whitelist, iCrypto MiniApp creates a flexible ecosystem that can adapt to various partnerships and reward structures. This feature not only enhances the user experience by potentially offering a variety of reward tokens but also positions the platform for scalable growth through strategic collaborations.
 
+## Smart Contract Addresses
+
+The iCrypto MiniApp utilizes the following smart contracts deployed on the Base Sepolia testnet:
+
+1. **RewardDistController**:
+
+   - Address: [0x6f01CbaFe6A920EB60A1BD3c7E81F51ec6216bD8](https://sepolia.basescan.org/address/0x6f01CbaFe6A920EB60A1BD3c7E81F51ec6216bD8)
+   - This contract manages the whitelist of reward tokens and controls the reward distribution process.
+
+2. **RewardDistributor**:
+
+   - Address: [0x50F23827A5d1082a227C0f6C4813890Ee3553BEf](https://sepolia.basescan.org/address/0x50F23827A5d1082a227C0f6C4813890Ee3553BEf)
+   - This contract handles the actual distribution of rewards to users based on their claims.
+
+3. **iCrypto Token (ICR)**:
+   - Address: [0x9742Ee81F7D6C0005FB4856660392FE618a941c0](https://sepolia.basescan.org/token/0x9742Ee81F7D6C0005FB4856660392FE618a941c0)
+   - This is the ERC20 token used as the primary reward in the iCrypto MiniApp.
+
+You can view more details about each contract, including transactions and contract code, by clicking on the respective links above.
+
 ## Getting Started
 
 ### Prerequisites
